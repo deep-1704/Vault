@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Vault</string>
+    <string name="settings_content_description">Settings</string>
+    <string name="addCard_btn_text">Add New Card</string>
+    <string name="cardList_content_description">Card List</string>
+    <string name="back_button_text">Back</string>
+    <string name="card_delete_btn_text">Delete</string>
+    <string name="no_cards_message">No cards to display</string>
+</resources>
