@@ -8,7 +8,7 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import com.project.vault.databinding.NewCardFormFragmentBinding
-import com.project.vault.model.CDCard
+import com.project.vault.entity.CDCard
 import com.project.vault.ui.viewModel.NewCardFormViewModel
 
 class NewCardFormFragment: Fragment() {

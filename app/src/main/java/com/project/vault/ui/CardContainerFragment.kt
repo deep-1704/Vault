@@ -11,7 +11,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.project.vault.R
 import com.project.vault.databinding.CardContainerFragmentBinding
 import com.project.vault.databinding.CdCardBinding
-import com.project.vault.model.CDCard
+import com.project.vault.entity.CDCard
 import com.project.vault.ui.viewModel.CardContainerViewModel
 
 class CLAdapter(
@@ -66,12 +66,13 @@ class CardContainerFragment: Fragment(R.layout.card_container_fragment) {
         binding.cardContainerRv.layoutManager = LinearLayoutManager(container?.context)
 
         viewModel.cards.observe(viewLifecycleOwner) { cards ->
-            if (cards.isEmpty()) {
-                binding.cardContainerRv.visibility = View.GONE
+            binding.cardContainerRv.visibility = View.GONE
+            binding.noCardsTv.visibility = View.GONE
+
+            if(cards.isEmpty()){
                 binding.noCardsTv.visibility = View.VISIBLE
             } else {
                 binding.cardContainerRv.visibility = View.VISIBLE
-                binding.noCardsTv.visibility = View.GONE
                 binding.cardContainerRv.adapter = CLAdapter(cards) { pos: Int ->
                     viewModel.deleteCardAtIndex(pos)
                 }

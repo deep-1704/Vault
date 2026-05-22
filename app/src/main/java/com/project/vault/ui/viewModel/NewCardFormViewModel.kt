@@ -6,7 +6,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.project.vault.AppDatabase
 import com.project.vault.dao.CardDao
-import com.project.vault.model.CDCard
+import com.project.vault.entity.CDCard
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 

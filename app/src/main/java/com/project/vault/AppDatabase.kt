@@ -5,7 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.project.vault.dao.CardDao
-import com.project.vault.model.CDCard
+import com.project.vault.entity.CDCard
 
 @Database(
     entities = [CDCard :: class],

@@ -1,4 +1,4 @@
-package com.project.vault.model
+package com.project.vault.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
