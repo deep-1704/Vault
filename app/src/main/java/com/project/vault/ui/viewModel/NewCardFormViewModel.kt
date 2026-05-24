@@ -1,17 +1,18 @@
 package com.project.vault.ui.viewModel
 
 import android.app.Application
+import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import com.project.vault.AppDatabase
-import com.project.vault.dao.CardDao
+import com.project.vault.domain.EncCardCRUDUseCase
 import com.project.vault.entity.CDCard
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class NewCardFormViewModel(application: Application): AndroidViewModel(application) {
-    private val cardDao: CardDao = AppDatabase.getDatabase(application).cdCardDao()
+    private val encCardCRUDUseCase = EncCardCRUDUseCase(application)
 
     val cardName: MutableLiveData<String> by lazy {
         MutableLiveData<String>("")
@@ -32,9 +33,14 @@ class NewCardFormViewModel(application: Application): AndroidViewModel(applicati
         MutableLiveData<Int>()
     }
 
-    fun addCard(card: CDCard) {
+    fun addCard(card: CDCard, onAuthRequired: suspend () -> Boolean) {
         viewModelScope.launch(Dispatchers.IO) {
-            cardDao.addCard(card)
+            val success = encCardCRUDUseCase.addCard(card, onAuthRequired)
+            if (success) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(getApplication(), "Card added successfully", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
     }
 }

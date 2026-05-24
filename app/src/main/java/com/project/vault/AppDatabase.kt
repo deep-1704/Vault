@@ -4,13 +4,12 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import com.project.vault.dao.CardDao
 import com.project.vault.dao.EncCardDao
-import com.project.vault.entity.CDCard
+import com.project.vault.entity.EncCDCard
 
 @Database(
-    entities = [CDCard :: class],
-    version = 1
+    entities = [EncCDCard :: class],
+    version = 2
 )
 abstract class AppDatabase: RoomDatabase() {
 
@@ -24,13 +23,14 @@ abstract class AppDatabase: RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "app_database"
-                ).build()
+                )
+                    .fallbackToDestructiveMigration(true)
+                    .build()
 
                 INSTANCE = instance
                 instance
             }
         }
     }
-    abstract fun cdCardDao() : CardDao
     abstract fun encCardDao(): EncCardDao
 }

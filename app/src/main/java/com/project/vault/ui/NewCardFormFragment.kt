@@ -11,6 +11,8 @@ import com.project.vault.databinding.NewCardFormFragmentBinding
 import com.project.vault.entity.CDCard
 import com.project.vault.ui.viewModel.NewCardFormViewModel
 
+import com.project.vault.util.BiometricHelper
+
 class NewCardFormFragment: Fragment() {
     private var _binding: NewCardFormFragmentBinding? = null
     private val binding get() = _binding!!
@@ -43,8 +45,13 @@ class NewCardFormFragment: Fragment() {
                         expMonth = etExpMonth.text.toString().toInt(),
                         expYear = etExpYear.text.toString().toInt(),
                         cvv = etCvv.text.toString().toInt()
-                    ))
-                    Toast.makeText(requireContext(), "Card submitted successfully", Toast.LENGTH_SHORT).show()
+                    )) {
+                        BiometricHelper.authenticate(
+                            requireActivity(),
+                            "Add Card",
+                            "Authenticate to save card securely"
+                        )
+                    }
                 }
             }
         }

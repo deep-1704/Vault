@@ -32,14 +32,16 @@ class CardContainerViewModel(application: Application): AndroidViewModel(applica
         }
     }
 
-    fun unlockCardAtIndex(index: Int) {
+    fun unlockCardAtIndex(index: Int, onAuthRequired: suspend () -> Boolean) {
         viewModelScope.launch(Dispatchers.IO) {
             val currentList = cards.value?.toMutableList() ?: return@launch
             val card = currentList.getOrNull(index)
             if (card is EncCDCard) {
-                val decryptedCard: CDCard = UnlockCardUseCase.decryptCard(card)
-                currentList[index] = decryptedCard
-                _cards.postValue(currentList)
+                val decryptedCard: CDCard? = UnlockCardUseCase.decryptCard(card, onAuthRequired)
+                if (decryptedCard != null) {
+                    currentList[index] = decryptedCard
+                    _cards.postValue(currentList)
+                }
             }
         }
     }

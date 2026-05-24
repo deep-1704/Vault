@@ -19,5 +19,5 @@ interface EncCardDao {
     suspend fun deleteCard(card: EncCDCard)
     
     @Query("DELETE FROM EncCDCard WHERE uid = :uid")
-    suspend fun deleteCardWithUid(uid: Int?)w
+    suspend fun deleteCardWithUid(uid: Int?)
 }

@@ -18,21 +18,32 @@ import com.project.vault.entity.EncCDCard
 import com.project.vault.entity.ICDCard
 import com.project.vault.ui.viewModel.CardContainerViewModel
 
+import com.project.vault.util.BiometricHelper
+
 class CLAdapter(
     val cards: List<ICDCard>,
     val onCardDeleteBtnClickListener: (Int) -> Unit,
     val onCardUnlockBtnClickListener: (Int) -> Unit
 ): RecyclerView.Adapter<CLAdapter.CardViewHolder>(){
 
+    companion object {
+        private const val TYPE_CD_CARD = 0
+        private const val TYPE_ENC_CD_CARD = 1
+    }
+
     class CardViewHolder(val binding: ViewBinding): RecyclerView.ViewHolder(binding.root)
+
+    override fun getItemViewType(position: Int): Int {
+        return if (cards[position] is CDCard) TYPE_CD_CARD else TYPE_ENC_CD_CARD
+    }
 
     // Generates the view (without data)
     override fun onCreateViewHolder(
         parent: ViewGroup,
-        pos: Int
+        viewType: Int
     ): CardViewHolder {
         val inflater = LayoutInflater.from(parent.context)
-        val binding = if(cards[pos] is CDCard){
+        val binding = if(viewType == TYPE_CD_CARD){
             CdCardBinding.inflate(inflater, parent, false)
         } else {
             EncCdCardBinding.inflate(inflater, parent, false)
@@ -43,27 +54,26 @@ class CLAdapter(
 
 
     override fun onBindViewHolder(cardViewHolder: CardViewHolder, position: Int) {
+        val card = cards[position]
         when (val binding = cardViewHolder.binding) {
             is CdCardBinding -> {
-                val card = cards[position] as CDCard
-                binding.apply {
-                    tvCardName.text = card.cardName
-                    tvCardNum.text = card.cardNumber
-                    tvCardHolderName.text = card.cardHolderName
-                    tvExpDate.text = "${card.expMonth}/${card.expYear}"
-                    tvCvv.text = card.cvv.toString()
+                (card as? CDCard)?.apply {
+                    binding.tvCardName.text = cardName
+                    binding.tvCardNum.text = cardNumber
+                    binding.tvCardHolderName.text = cardHolderName
+                    binding.tvExpDate.text = "$expMonth/$expYear"
+                    binding.tvCvv.text = cvv.toString()
 
-                    cardDeleteBtn.setOnClickListener {
+                    binding.cardDeleteBtn.setOnClickListener {
                         onCardDeleteBtnClickListener(position)
                     }
                 }
             }
             is EncCdCardBinding -> {
-                val card = cards[position] as EncCDCard
-                binding.apply {
-                    tvEncCardName.text = card.cardName
+                (card as? EncCDCard)?.apply {
+                    binding.tvEncCardName.text = cardName
 
-                    cardUnlockBtn.setOnClickListener {
+                    binding.cardUnlockBtn.setOnClickListener {
                         onCardUnlockBtnClickListener(position)
                     }
                 }
@@ -102,7 +112,13 @@ class CardContainerFragment: Fragment(R.layout.card_container_fragment) {
                         viewModel.deleteCardAtIndex(pos)
                     },
                     onCardUnlockBtnClickListener = { pos: Int ->
-                        viewModel.unlockCardAtIndex(pos)
+                        viewModel.unlockCardAtIndex(pos) {
+                            BiometricHelper.authenticate(
+                                requireActivity(),
+                                "Unlock Card",
+                                "Authenticate to view card details"
+                            )
+                        }
                     }
                 )
             }
