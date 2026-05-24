@@ -8,4 +8,20 @@
     <string name="no_cards_message">No cards to display</string>
     <string name="placeholder_txt">Placeholder</string>
     <string name="unlock_card_btn_txt">Unlock Card</string>
+    <string name="hint_card_number">Card Number (13–16 digits)</string>
+    <string name="hint_card_name">Card Name</string>
+    <string name="hint_card_holder_name">Card Holder Name</string>
+    <string name="hint_exp_month">Exp Month</string>
+    <string name="hint_exp_year">Exp Year</string>
+    <string name="hint_cvv">CVV</string>
+    <string name="btn_submit">Submit</string>
+    <string name="biometric_title">Add Card</string>
+    <string name="biometric_subtitle">Authenticate to save card securely</string>
+    <string name="error_card_name_empty">Card name cannot be empty</string>
+    <string name="error_card_number_length">Card number must be between 13 and 16 digits</string>
+    <string name="error_luhn_failed">Invalid card number</string>
+    <string name="error_card_holder_empty">Card holder name cannot be empty</string>
+    <string name="error_invalid_month">Month must be between 1 and 12</string>
+    <string name="error_exp_year_empty">Exp year cannot be empty</string>
+    <string name="error_cvv_length">CVV must be 3 digits</string>
 </resources>

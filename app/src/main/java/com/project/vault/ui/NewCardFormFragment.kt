@@ -4,9 +4,9 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import com.project.vault.R
 import com.project.vault.databinding.NewCardFormFragmentBinding
 import com.project.vault.entity.CDCard
 import com.project.vault.ui.viewModel.NewCardFormViewModel
@@ -48,8 +48,8 @@ class NewCardFormFragment: Fragment() {
                     )) {
                         BiometricHelper.authenticate(
                             requireActivity(),
-                            "Add Card",
-                            "Authenticate to save card securely"
+                            getString(R.string.biometric_title),
+                            getString(R.string.biometric_subtitle)
                         )
                     }
                 }
@@ -87,41 +87,74 @@ class NewCardFormFragment: Fragment() {
 
             val cardName = etCardName.text.toString()
             if (cardName.isBlank()) {
-                tilCardName.error = "Card name cannot be empty"
+                tilCardName.error = getString(R.string.error_card_name_empty)
                 return false
             }
 
             val cardNumber = etCardNumber.text.toString()
-            if (cardNumber.length != 16) {
-                tilCardNumber.error = "Card number must be 16 digits"
+            if (cardNumber.length !in 13..16) {
+                tilCardNumber.error = getString(R.string.error_card_number_length)
+                return false
+            }
+
+            if (!isValidLuhn(cardNumber)) {
+                tilCardNumber.error = getString(R.string.error_luhn_failed)
                 return false
             }
 
             val cardHolderName = etCardHolderName.text.toString()
             if (cardHolderName.isBlank()) {
-                tilCardHolderName.error = "Card holder name cannot be empty"
+                tilCardHolderName.error = getString(R.string.error_card_holder_empty)
                 return false
             }
 
             val expMonthStr = etExpMonth.text.toString()
             val expMonth = expMonthStr.toIntOrNull()
             if (expMonth == null || expMonth !in 1..12) {
-                tilExpMonth.error = "Month must be between 1 and 12"
+                tilExpMonth.error = getString(R.string.error_invalid_month)
                 return false
             }
 
             val expYear = etExpYear.text.toString()
             if (expYear.isBlank()) {
-                tilExpYear.error = "Exp year cannot be empty"
+                tilExpYear.error = getString(R.string.error_exp_year_empty)
                 return false
             }
 
             val cvv = etCvv.text.toString()
             if (cvv.length != 3) {
-                tilCvv.error = "CVV must be 3 digits"
+                tilCvv.error = getString(R.string.error_cvv_length)
                 return false
             }
         }
         return true
+    }
+
+    private fun isValidLuhn(number: String): Boolean {
+        if (number.isEmpty()) return false
+
+        var step2Sum = 0 // Sum of modified even-position digits
+        var step3Sum = 0 // Sum of odd-position digits
+
+        for (i in number.length - 1 downTo 0) {
+            val digit = number[i].digitToIntOrNull() ?: return false
+            val positionFromRight = number.length - i // 1-based position
+
+            if (positionFromRight % 2 == 0) {
+                // Step 1: Double every second digit from right
+                var doubled = digit * 2
+                // If doubling results in a two-digit number, add the digits
+                if (doubled > 9) {
+                    doubled = (doubled / 10) + (doubled % 10)
+                }
+                step2Sum += doubled
+            } else {
+                // Step 3: Add digits in odd places from right
+                step3Sum += digit
+            }
+        }
+
+        // Step 4 & 5: Check if total sum is divisible by 10
+        return (step2Sum + step3Sum) % 10 == 0
     }
 }
