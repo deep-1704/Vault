@@ -1,5 +1,6 @@
 package com.project.vault.core
 
+import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
@@ -16,25 +17,38 @@ class Security {
         private const val AES_MODE = "AES/GCM/NoPadding"
         private const val IV_SIZE = 12 // GCM recommended IV size
         private const val TAG_SIZE = 128 // GCM authentication tag size
+        private const val AUTH_VALIDITY_DURATION = 2
 
         /**
          * Generates an AES key and stores it in the Android KeyStore.
+         * The key is protected by biometric authentication with a 5-second validity period.
          *
          * @param alias The alias for the key.
          */
         @JvmStatic
         fun generateKey(alias: String) {
             val keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, ANDROID_KEYSTORE)
-            val keyGenParameterSpec = KeyGenParameterSpec.Builder(
+            val builder = KeyGenParameterSpec.Builder(
                 alias,
                 KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
             )
                 .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
                 .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-                .setRandomizedEncryptionRequired(true) // Important for security
-                .build()
+                .setRandomizedEncryptionRequired(true)
+                .setUserAuthenticationRequired(true)
+                .setInvalidatedByBiometricEnrollment(false)
 
-            keyGenerator.init(keyGenParameterSpec)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                builder.setUserAuthenticationParameters(
+                    AUTH_VALIDITY_DURATION,
+                    KeyProperties.AUTH_BIOMETRIC_STRONG or KeyProperties.AUTH_DEVICE_CREDENTIAL
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                builder.setUserAuthenticationValidityDurationSeconds(AUTH_VALIDITY_DURATION)
+            }
+
+            keyGenerator.init(builder.build())
             keyGenerator.generateKey()
         }
 
@@ -44,6 +58,7 @@ class Security {
          * @param text The text to encrypt.
          * @param alias The alias of the key to use.
          * @return The Base64 encoded encrypted string (IV + Ciphertext).
+         * @throws android.security.keystore.UserNotAuthenticatedException if authentication is required.
          */
         @JvmStatic
         fun encryptText(text: String, alias: String): String {
@@ -67,6 +82,7 @@ class Security {
          * @param encryptedText The Base64 encoded encrypted string (IV + Ciphertext).
          * @param alias The alias of the key to use.
          * @return The decrypted plain text.
+         * @throws android.security.keystore.UserNotAuthenticatedException if authentication is required.
          * @throws Exception if decryption fails or key is not found.
          */
         @JvmStatic

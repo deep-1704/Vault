@@ -6,4 +6,6 @@
     <string name="back_button_text">Back</string>
     <string name="card_delete_btn_text">Delete</string>
     <string name="no_cards_message">No cards to display</string>
+    <string name="placeholder_txt">Placeholder</string>
+    <string name="unlock_card_btn_txt">Unlock Card</string>
 </resources>
