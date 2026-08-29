@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/vault_background"
+    tools:context=".ui.home.HomeFragment">
+
+    <!-- ── "Vault" title (Fixed at top) ─────────────────────────── -->
+    <TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="28dp"
+        android:text="@string/app_name"
+        android:textAppearance="@style/TextAppearance.Vault.HeadlineLarge"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- ── Entry count (Fixed below title) ──────────────────────── -->
+    <TextView
+        android:id="@+id/tvEntryCount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="4dp"
+        android:textAppearance="@style/TextAppearance.Vault.BodyMedium"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvTitle"
+        tools:text="5 Secure Entries" />
+
+    <!-- ── Scrollable list (RecyclerView) ───────────────────────── -->
+    <!-- ClipToPadding is set to false with a bottom padding of 88dp so
+         items can scroll fully above the floating action button. -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvCredentials"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="20dp"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="88dp"
+        android:clipToPadding="false"
+        app:layout_constraintTop_toBottomOf="@id/tvEntryCount"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:listitem="@layout/item_credential" />
+
+    <!-- ── Empty state (Centered in the remaining area) ──────────── -->
+    <LinearLayout
+        android:id="@+id/layoutEmpty"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/tvEntryCount"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:visibility="visible">
+
+        <!-- Placeholder icon — swap for a real illustration later -->
+        <ImageView
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:src="@drawable/ic_offline"
+            android:alpha="0.35"
+            app:tint="@color/vault_on_surface_variant"
+            android:contentDescription="@null" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="No credentials added"
+            android:textAppearance="@style/TextAppearance.Vault.HeadlineSmall"
+            android:textColor="@color/vault_on_surface"
+            android:gravity="center" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Add your first entry"
+            android:textAppearance="@style/TextAppearance.Vault.BodyMedium"
+            android:gravity="center" />
+
+    </LinearLayout>
+
+    <!-- ── FAB (Floating Action Button overlayed at bottom right) ── -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="20dp"
+        android:contentDescription="Add credential"
+        android:src="@drawable/ic_add"
+        app:backgroundTint="@color/vault_primary_container"
+        app:tint="@color/vault_on_primary_container"
+        app:elevation="6dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

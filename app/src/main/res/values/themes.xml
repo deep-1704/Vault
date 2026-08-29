@@ -1,9 +1,316 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.Vault" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+
+    <!--
+    ═══════════════════════════════════════════════════════════════════════
+    VAULT DESIGN SYSTEM — THEME
+    Philosophy: Dark-First, always-dark. No light theme variant.
+    ═══════════════════════════════════════════════════════════════════════
+    -->
+
+    <!-- ─── Core App Theme ─────────────────────────────────────────────── -->
+    <style name="Base.Theme.Vault" parent="Theme.Material3.Dark.NoActionBar">
+
+        <!-- Material3 Color System — mapped from DESIGN.md -->
+        <item name="colorPrimary">@color/vault_primary</item>
+        <item name="colorOnPrimary">@color/vault_on_primary</item>
+        <item name="colorPrimaryContainer">@color/vault_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/vault_on_primary_container</item>
+        <item name="colorPrimaryInverse">@color/vault_inverse_primary</item>
+
+        <item name="colorSecondary">@color/vault_secondary</item>
+        <item name="colorOnSecondary">@color/vault_on_secondary</item>
+        <item name="colorSecondaryContainer">@color/vault_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/vault_on_secondary_container</item>
+
+        <item name="colorTertiary">@color/vault_tertiary</item>
+        <item name="colorOnTertiary">@color/vault_on_tertiary</item>
+        <item name="colorTertiaryContainer">@color/vault_tertiary_container</item>
+        <item name="colorOnTertiaryContainer">@color/vault_on_tertiary_container</item>
+
+        <item name="colorError">@color/vault_error</item>
+        <item name="colorOnError">@color/vault_on_error</item>
+        <item name="colorErrorContainer">@color/vault_error_container</item>
+        <item name="colorOnErrorContainer">@color/vault_on_error_container</item>
+
+        <item name="android:colorBackground">@color/vault_background</item>
+        <item name="colorOnBackground">@color/vault_on_background</item>
+
+        <item name="colorSurface">@color/vault_surface</item>
+        <item name="colorOnSurface">@color/vault_on_surface</item>
+        <item name="colorSurfaceVariant">@color/vault_surface_variant</item>
+        <item name="colorOnSurfaceVariant">@color/vault_on_surface_variant</item>
+        <item name="colorSurfaceInverse">@color/vault_inverse_surface</item>
+        <item name="colorOnSurfaceInverse">@color/vault_inverse_on_surface</item>
+
+        <item name="colorOutline">@color/vault_outline</item>
+        <item name="colorOutlineVariant">@color/vault_outline_variant</item>
+
+        <!-- Window chrome -->
+        <item name="android:statusBarColor">@color/vault_surface_container_lowest</item>
+        <item name="android:navigationBarColor">@color/vault_surface_container_lowest</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="23">false</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">false</item>
+
+        <!-- Text appearances (Inter for UI, Geist for mono/labels) -->
+        <item name="textAppearanceHeadlineLarge">@style/TextAppearance.Vault.HeadlineLarge</item>
+        <item name="textAppearanceHeadlineMedium">@style/TextAppearance.Vault.HeadlineMedium</item>
+        <item name="textAppearanceHeadlineSmall">@style/TextAppearance.Vault.HeadlineSmall</item>
+        <item name="textAppearanceBodyLarge">@style/TextAppearance.Vault.BodyLarge</item>
+        <item name="textAppearanceBodyMedium">@style/TextAppearance.Vault.BodyMedium</item>
+        <item name="textAppearanceLabelLarge">@style/TextAppearance.Vault.LabelCaps</item>
+        <item name="textAppearanceLabelMedium">@style/TextAppearance.Vault.LabelSmall</item>
+        <item name="textAppearanceLabelSmall">@style/TextAppearance.Vault.LabelSmall</item>
+
+        <!-- Shape system — from DESIGN.md rounded values -->
+        <item name="shapeAppearanceSmallComponent">@style/ShapeAppearance.Vault.Small</item>
+        <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.Vault.Medium</item>
+        <item name="shapeAppearanceLargeComponent">@style/ShapeAppearance.Vault.Large</item>
+
+        <!-- Material component defaults -->
+        <item name="materialButtonStyle">@style/Widget.Vault.Button.Primary</item>
+        <item name="materialButtonOutlinedStyle">@style/Widget.Vault.Button.Secondary</item>
+        <item name="textInputStyle">@style/Widget.Vault.TextInputLayout</item>
+        <item name="chipStyle">@style/Widget.Vault.Chip.Status</item>
+
+        <!-- Card -->
+        <item name="materialCardViewStyle">@style/Widget.Vault.CardView</item>
+
     </style>
 
     <style name="Theme.Vault" parent="Base.Theme.Vault" />
+
+
+    <!-- ─── Shape Appearances ──────────────────────────────────────────── -->
+    <!-- sm: 4dp  |  DEFAULT/buttons+inputs: 8dp  |  cards/containers: 12dp  |  xl: 16dp  |  pill: 50dp -->
+
+    <style name="ShapeAppearance.Vault.Small" parent="ShapeAppearance.Material3.SmallComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">4dp</item>
+    </style>
+
+    <style name="ShapeAppearance.Vault.Medium" parent="ShapeAppearance.Material3.MediumComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">8dp</item>
+    </style>
+
+    <style name="ShapeAppearance.Vault.Large" parent="ShapeAppearance.Material3.LargeComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">12dp</item>
+    </style>
+
+    <style name="ShapeAppearance.Vault.Pill" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+
+
+    <!-- ─── Text Appearances ───────────────────────────────────────────── -->
+    <!-- Inter family (UI text) -->
+
+    <!-- headline-lg: 32sp / Bold / -0.02em tracking -->
+    <style name="TextAppearance.Vault.HeadlineLarge" parent="TextAppearance.Material3.HeadlineLarge">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textSize">32sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">-0.02</item>
+        <item name="android:lineHeight" tools:targetApi="29">40sp</item>
+        <item name="android:textColor">@color/vault_on_surface</item>
+    </style>
+
+    <!-- headline-md: 24sp / SemiBold / -0.01em -->
+    <style name="TextAppearance.Vault.HeadlineMedium" parent="TextAppearance.Material3.HeadlineMedium">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textSize">24sp</item>
+        <item name="android:letterSpacing">-0.01</item>
+        <item name="android:lineHeight" tools:targetApi="29">32sp</item>
+        <item name="android:textColor">@color/vault_on_surface</item>
+    </style>
+
+    <!-- headline-sm: 20sp / SemiBold -->
+    <style name="TextAppearance.Vault.HeadlineSmall" parent="TextAppearance.Material3.HeadlineSmall">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textSize">20sp</item>
+        <item name="android:lineHeight" tools:targetApi="29">28sp</item>
+        <item name="android:textColor">@color/vault_on_surface</item>
+    </style>
+
+    <!-- body-lg: 16sp / Regular -->
+    <style name="TextAppearance.Vault.BodyLarge" parent="TextAppearance.Material3.BodyLarge">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:lineHeight" tools:targetApi="29">24sp</item>
+        <item name="android:textColor">@color/vault_on_surface</item>
+    </style>
+
+    <!-- body-md: 14sp / Regular -->
+    <style name="TextAppearance.Vault.BodyMedium" parent="TextAppearance.Material3.BodyMedium">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:lineHeight" tools:targetApi="29">20sp</item>
+        <item name="android:textColor">@color/vault_on_surface_variant</item>
+    </style>
+
+    <!-- label-caps: 12sp / SemiBold / +0.05em (Geist → mono) -->
+    <style name="TextAppearance.Vault.LabelCaps" parent="TextAppearance.Material3.LabelLarge">
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.05</item>
+        <item name="android:lineHeight" tools:targetApi="29">16sp</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:textColor">@color/vault_on_surface_variant</item>
+    </style>
+
+    <!-- label-sm: 11sp / Medium (Geist → mono) -->
+    <style name="TextAppearance.Vault.LabelSmall" parent="TextAppearance.Material3.LabelSmall">
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:textSize">11sp</item>
+        <item name="android:lineHeight" tools:targetApi="29">14sp</item>
+        <item name="android:textColor">@color/vault_on_surface_variant</item>
+    </style>
+
+    <!-- mono-md: 14sp / Regular — for sensitive data, keys, hashes -->
+    <style name="TextAppearance.Vault.MonoMedium" parent="TextAppearance.Material3.BodyMedium">
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:lineHeight" tools:targetApi="29">20sp</item>
+        <item name="android:textColor">@color/vault_on_surface</item>
+    </style>
+
+
+    <!-- ─── Button Styles ──────────────────────────────────────────────── -->
+
+    <!-- Primary: Solid #0052FF — for high-priority actions -->
+    <style name="Widget.Vault.Button.Primary" parent="Widget.Material3.Button">
+        <item name="android:minHeight">44dp</item>
+        <item name="backgroundTint">@color/vault_action_primary</item>
+        <item name="android:textColor">@android:color/white</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.Vault.Medium</item>
+        <item name="android:textAppearance">@style/TextAppearance.Vault.BodyMedium</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.01</item>
+    </style>
+
+    <!-- Secondary: Ghost / outlined — 1px slate-700 border, white text -->
+    <style name="Widget.Vault.Button.Secondary" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="android:minHeight">44dp</item>
+        <item name="backgroundTint">@android:color/transparent</item>
+        <item name="android:textColor">@color/vault_on_surface</item>
+        <item name="strokeColor">@color/vault_outline_variant</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.Vault.Medium</item>
+        <item name="android:textAppearance">@style/TextAppearance.Vault.BodyMedium</item>
+    </style>
+
+    <!-- Destructive: text-only red, no background -->
+    <style name="Widget.Vault.Button.Destructive" parent="Widget.Material3.Button.TextButton">
+        <item name="android:minHeight">44dp</item>
+        <item name="android:textColor">@color/vault_error</item>
+        <item name="rippleColor">@color/vault_error_container</item>
+        <item name="android:textAppearance">@style/TextAppearance.Vault.BodyMedium</item>
+    </style>
+
+
+    <!-- ─── Input Field Style ──────────────────────────────────────────── -->
+    <!-- Solid #1E293B fill; active state: 2dp Primary Blue bottom border -->
+
+    <style name="Widget.Vault.TextInputLayout" parent="Widget.Material3.TextInputLayout.FilledBox">
+        <item name="boxBackgroundColor">@color/vault_input_background</item>
+        <item name="boxBackgroundMode">filled</item>
+        <item name="boxStrokeColor">@color/vault_primary</item>
+        <item name="boxStrokeWidth">0dp</item>
+        <item name="boxStrokeWidthFocused">2dp</item>
+        <item name="hintTextColor">@color/vault_on_surface_variant</item>
+        <item name="android:textColorHint">@color/vault_outline</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.Vault.Medium</item>
+        <item name="endIconTint">@color/vault_on_surface_variant</item>
+        <item name="startIconTint">@color/vault_on_surface_variant</item>
+    </style>
+
+    <style name="Widget.Vault.TextInputEditText" parent="Widget.Material3.TextInputEditText.FilledBox">
+        <item name="android:textColor">@color/vault_on_surface</item>
+        <item name="android:textAppearance">@style/TextAppearance.Vault.BodyLarge</item>
+    </style>
+
+
+    <!-- ─── Card Style ─────────────────────────────────────────────────── -->
+    <!-- 12dp radius, surface-container bg, 1px 10%-white stroke, subtle shadow -->
+
+    <style name="Widget.Vault.CardView" parent="Widget.Material3.CardView.Elevated">
+        <item name="cardBackgroundColor">@color/vault_surface_container</item>
+        <item name="cardCornerRadius">12dp</item>
+        <item name="cardElevation">4dp</item>
+        <item name="strokeColor">@color/vault_card_stroke</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="contentPadding">16dp</item>
+    </style>
+
+    <!-- Elevated card variant (active/hover state) -->
+    <style name="Widget.Vault.CardView.Elevated" parent="Widget.Vault.CardView">
+        <item name="cardBackgroundColor">@color/vault_surface_container_high</item>
+        <item name="cardElevation">8dp</item>
+    </style>
+
+
+    <!-- ─── Chip / Status Badge Style ─────────────────────────────────── -->
+    <!-- Pill-shaped, icon + label, low-opacity tinted background -->
+
+    <style name="Widget.Vault.Chip.Status" parent="Widget.Material3.Chip.Assist">
+        <item name="shapeAppearance">@style/ShapeAppearance.Vault.Pill</item>
+        <item name="android:minHeight">32dp</item>
+        <item name="chipStrokeWidth">0dp</item>
+        <item name="android:textAppearance">@style/TextAppearance.Vault.LabelSmall</item>
+    </style>
+
+    <!-- Synced badge -->
+    <style name="Widget.Vault.Chip.Status.Synced" parent="Widget.Vault.Chip.Status">
+        <item name="chipBackgroundColor">@color/vault_status_synced_bg</item>
+        <item name="android:textColor">@color/vault_secondary</item>
+        <item name="chipIconTint">@color/vault_secondary</item>
+    </style>
+
+    <!-- Shared badge -->
+    <style name="Widget.Vault.Chip.Status.Shared" parent="Widget.Vault.Chip.Status">
+        <item name="chipBackgroundColor">@color/vault_status_shared_bg</item>
+        <item name="android:textColor">@color/vault_tertiary</item>
+        <item name="chipIconTint">@color/vault_tertiary</item>
+    </style>
+
+    <!-- Offline badge -->
+    <style name="Widget.Vault.Chip.Status.Offline" parent="Widget.Vault.Chip.Status">
+        <item name="chipBackgroundColor">@color/vault_status_offline_bg</item>
+        <item name="android:textColor">@color/vault_on_surface_variant</item>
+        <item name="chipIconTint">@color/vault_on_surface_variant</item>
+    </style>
+
+
+    <!-- ─── Divider / Surface layers ──────────────────────────────────── -->
+
+    <style name="Widget.Vault.Divider" parent="">
+        <item name="android:background">@color/vault_outline_variant</item>
+        <item name="android:layout_height">1dp</item>
+        <item name="android:layout_width">match_parent</item>
+    </style>
+
+    <!-- ─── Bottom Sheet Theme ────────────────────────────────────────── -->
+    <style name="Theme.Vault.BottomSheet" parent="Theme.Material3.Dark.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/Widget.Vault.BottomSheet</item>
+        <item name="android:colorBackground">@color/vault_surface_container_high</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="enableEdgeToEdge">true</item>
+    </style>
+
+    <style name="Widget.Vault.BottomSheet" parent="Widget.Material3.BottomSheet">
+        <item name="shapeAppearance">@style/ShapeAppearance.Vault.BottomSheet</item>
+        <item name="backgroundTint">@color/vault_surface_container_high</item>
+    </style>
+
+    <style name="ShapeAppearance.Vault.BottomSheet" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSizeTopLeft">16dp</item>
+        <item name="cornerSizeTopRight">16dp</item>
+        <item name="cornerSizeBottomLeft">0dp</item>
+        <item name="cornerSizeBottomRight">0dp</item>
+    </style>
+
 </resources>

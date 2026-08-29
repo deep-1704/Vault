@@ -4,17 +4,12 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_graph"
-    app:startDestination="@id/placeholderFragment">
+    app:startDestination="@id/homeFragment">
 
-    <!--
-        PlaceholderFragment is the temporary start destination.
-        Replace it with the real first screen and add feature destinations
-        (with <action> elements for navigation) as the app is built out.
-    -->
     <fragment
-        android:id="@+id/placeholderFragment"
-        android:name="com.project.vault.ui.placeholder.PlaceholderFragment"
+        android:id="@+id/homeFragment"
+        android:name="com.project.vault.ui.home.HomeFragment"
         android:label="Vault"
-        tools:layout="@layout/fragment_placeholder" />
+        tools:layout="@layout/fragment_home" />
 
 </navigation>
