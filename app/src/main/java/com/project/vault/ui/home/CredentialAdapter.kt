@@ -117,7 +117,7 @@ class CredentialAdapter(
             val ctx = chip.context
             when (status) {
                 CredentialStatus.SYNCED -> {
-                    chip.text = "Synced"
+                    chip.text = ctx.getString(R.string.status_synced)
                     chip.chipBackgroundColor =
                         ctx.getColorStateList(R.color.vault_status_synced_bg)
                     chip.setTextColor(ctx.getColor(R.color.vault_secondary))
@@ -126,7 +126,7 @@ class CredentialAdapter(
                     chip.isChipIconVisible = true
                 }
                 CredentialStatus.SHARED -> {
-                    chip.text = "Shared"
+                    chip.text = ctx.getString(R.string.status_shared)
                     chip.chipBackgroundColor =
                         ctx.getColorStateList(R.color.vault_status_shared_bg)
                     chip.setTextColor(ctx.getColor(R.color.vault_tertiary))
@@ -135,7 +135,7 @@ class CredentialAdapter(
                     chip.isChipIconVisible = true
                 }
                 CredentialStatus.OFFLINE -> {
-                    chip.text = "Offline"
+                    chip.text = ctx.getString(R.string.status_offline)
                     chip.chipBackgroundColor =
                         ctx.getColorStateList(R.color.vault_status_offline_bg)
                     chip.setTextColor(ctx.getColor(R.color.vault_on_surface_variant))

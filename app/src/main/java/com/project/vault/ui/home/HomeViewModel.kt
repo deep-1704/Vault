@@ -86,15 +86,6 @@ class HomeViewModel @Inject constructor() : BaseViewModel() {
     // ── Mock data ────────────────────────────────────────────────────────
 
     companion object {
-        private val MOCK_CREDENTIALS = listOf(
-            Credential(1, "Google Workspace", CredentialStatus.SYNCED),
-            Credential(2, "Amazon Prime",     CredentialStatus.SHARED),
-            Credential(3, "Chase Sapphire",   CredentialStatus.OFFLINE),
-            Credential(4, "GitHub",           CredentialStatus.SYNCED),
-            Credential(5, "Netflix",          CredentialStatus.SHARED),
-            Credential(5, "Netflix",          CredentialStatus.SHARED),
-            Credential(5, "Netflix",          CredentialStatus.SHARED),
-            Credential(5, "Netflix",          CredentialStatus.SHARED)
-        )
+        private val MOCK_CREDENTIALS = mutableListOf<Credential>()
     }
 }

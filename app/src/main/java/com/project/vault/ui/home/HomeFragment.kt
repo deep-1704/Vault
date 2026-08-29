@@ -7,7 +7,10 @@ import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.navigation.fragment.findNavController
+import com.project.vault.R
 import com.project.vault.databinding.FragmentHomeBinding
+import com.project.vault.ui.auth.LoginFragment
 import com.project.vault.ui.base.BaseFragment
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -48,6 +51,8 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
         setupRecyclerView()
         observeViewModel()
         setupFab()
+        setupHeaderButtons()
+        observeNavigationResults()
     }
 
     // ── Setup ────────────────────────────────────────────────────────────
@@ -67,6 +72,37 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
         }
     }
 
+    private fun setupHeaderButtons() {
+        // Navigate to the new LoginFragment
+        binding.btnLogin.setOnClickListener {
+            findNavController().navigate(R.id.action_homeFragment_to_loginFragment)
+        }
+
+        // Clicking profile resets the login state in SavedStateHandle and local UI
+        binding.btnProfile.setOnClickListener {
+            findNavController().currentBackStackEntry?.savedStateHandle?.set(
+                LoginFragment.KEY_IS_LOGGED_IN,
+                false
+            )
+            updateLoginUiState(isLoggedIn = false)
+            showToast("Logged out (Mock)")
+        }
+    }
+
+    private fun observeNavigationResults() {
+        // Observe login state results passed back from LoginFragment
+        findNavController().currentBackStackEntry?.savedStateHandle
+            ?.getLiveData<Boolean>(LoginFragment.KEY_IS_LOGGED_IN)
+            ?.observe(viewLifecycleOwner) { isLoggedIn ->
+                updateLoginUiState(isLoggedIn)
+            }
+    }
+
+    private fun updateLoginUiState(isLoggedIn: Boolean) {
+        binding.btnLogin.visibility = if (isLoggedIn) View.GONE else View.VISIBLE
+        binding.btnProfile.visibility = if (isLoggedIn) View.VISIBLE else View.GONE
+    }
+
     // ── Observation ──────────────────────────────────────────────────────
 
     private fun observeViewModel() {
@@ -77,8 +113,8 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
             binding.rvCredentials.isVisible = !isEmpty
             binding.layoutEmpty.isVisible    = isEmpty
             binding.tvEntryCount.text =
-                if (isEmpty) "No entries"
-                else "${credentials.size} Secure Entries"
+                if (isEmpty) getString(R.string.home_no_entries)
+                else getString(R.string.home_entry_count_placeholder, credentials.size)
         }
 
         viewModel.buttonLoadingEvent.observe(viewLifecycleOwner) { event ->

@@ -33,6 +33,35 @@
         app:layout_constraintTop_toBottomOf="@id/tvTitle"
         tools:text="5 Secure Entries" />
 
+    <!-- ── Header Login Button (Fixed top right) ───────────────── -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnLogin"
+        style="@style/Widget.Vault.Button.Secondary"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="20dp"
+        android:text="@string/btn_login"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/tvTitle"
+        app:layout_constraintBottom_toBottomOf="@id/tvEntryCount" />
+
+    <!-- ── Profile button (Shown when logged in) ────────────────── -->
+    <ImageButton
+        android:id="@+id/btnProfile"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_marginEnd="20dp"
+        android:src="@drawable/ic_profile"
+        android:scaleType="fitCenter"
+        android:padding="8dp"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Profile"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/tvTitle"
+        app:layout_constraintBottom_toBottomOf="@id/tvEntryCount"
+        tools:visibility="visible" />
+
     <!-- ── Scrollable list (RecyclerView) ───────────────────────── -->
     <!-- ClipToPadding is set to false with a bottom padding of 88dp so
          items can scroll fully above the floating action button. -->
@@ -78,7 +107,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:text="No credentials added"
+            android:text="@string/home_empty_title"
             android:textAppearance="@style/TextAppearance.Vault.HeadlineSmall"
             android:textColor="@color/vault_on_surface"
             android:gravity="center" />
@@ -87,7 +116,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="Add your first entry"
+            android:text="@string/home_empty_subtitle"
             android:textAppearance="@style/TextAppearance.Vault.BodyMedium"
             android:gravity="center" />
 
