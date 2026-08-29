@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
-    id("com.google.devtools.ksp")
+    alias(libs.plugins.hilt)
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -21,8 +22,9 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    buildFeatures{
+    buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
 
     buildTypes {
@@ -38,24 +40,60 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+    //noinspection WrongGradleMethod
+    kotlin {
+        compilerOptions {
+            jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11
+        }
+    }
 }
 
 dependencies {
-    implementation(libs.androidx.activity.ktx)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.androidx.constraintlayout)
+    // AndroidX Core
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.activity.ktx)
+    implementation(libs.androidx.fragment.ktx)
+    implementation(libs.androidx.constraintlayout)
+    implementation(libs.androidx.recyclerview)
+    implementation(libs.androidx.preference.ktx)
+    implementation(libs.material)
+
+    // Navigation
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
-    implementation(libs.androidx.recyclerview)
-    implementation(libs.material)
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(libs.androidx.junit)
-    implementation(libs.androidx.fragment.ktx)
-    implementation(libs.gson)
-    implementation(libs.androidx.preference.ktx)
+
+    // Lifecycle (ViewModel + LiveData)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.lifecycle.livedata.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+
+    // Hilt
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
+    implementation(libs.hilt.navigation.fragment)
+
+    // Room
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
+
+    // Retrofit + OkHttp
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.gson)
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.logging.interceptor)
+
+    // Coroutines
+    implementation(libs.kotlinx.coroutines.android)
+
+    // JSON
+    implementation(libs.gson)
+
+    // Security
     implementation(libs.androidx.biometric)
+
+    // Test
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
 }

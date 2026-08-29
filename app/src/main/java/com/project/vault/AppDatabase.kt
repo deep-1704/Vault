@@ -1,36 +1,30 @@
 package com.project.vault
 
-import android.content.Context
 import androidx.room.Database
-import androidx.room.Room
 import androidx.room.RoomDatabase
-import com.project.vault.dao.EncCardDao
-import com.project.vault.entity.EncCDCard
+import com.project.vault.entity.PlaceholderEntity
 
+/**
+ * Room database for Vault.
+ *
+ * - Replace [PlaceholderEntity] with real feature entities as the app grows.
+ * - When adding real entities: update [entities], increment [version], and
+ *   provide a [androidx.room.migration.Migration] to preserve user data.
+ * - Set [exportSchema] to true and configure a schema export directory via
+ *   the Room Gradle plugin when you're ready to track schema history.
+ * - The singleton instance is provided by Hilt via [di.AppModule].
+ */
 @Database(
-    entities = [EncCDCard :: class],
-    version = 2
+    entities = [PlaceholderEntity::class],
+    version = 1,
+    exportSchema = false
 )
-abstract class AppDatabase: RoomDatabase() {
+abstract class AppDatabase : RoomDatabase() {
+
+    // DAOs will be declared here as abstract functions when entities are added.
+    // Example: abstract fun itemDao(): ItemDao
 
     companion object {
-        @Volatile
-        private var INSTANCE: AppDatabase? = null
-
-        fun getDatabase(context: Context): AppDatabase{
-            return INSTANCE?: synchronized(this) {
-                val instance = Room.databaseBuilder(
-                    context.applicationContext,
-                    AppDatabase::class.java,
-                    "app_database"
-                )
-                    .fallbackToDestructiveMigration(true)
-                    .build()
-
-                INSTANCE = instance
-                instance
-            }
-        }
+        const val DATABASE_NAME = "vault_database"
     }
-    abstract fun encCardDao(): EncCardDao
 }
