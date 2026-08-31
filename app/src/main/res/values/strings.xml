@@ -43,4 +43,24 @@
     <string name="status_synced">Synced</string>
     <string name="status_shared">Shared</string>
     <string name="status_offline">Offline</string>
+
+    <!-- Add Credential Bottom Sheet -->
+    <string name="add_credential_title">New Credential</string>
+    <string name="add_credential_type_hint">Credential Type</string>
+    <string name="type_card">Credit / Debit Card</string>
+    <string name="type_login">Username &amp; Password</string>
+    <string name="btn_save">Save</string>
+    <string name="btn_save_sync">Save &amp; Sync</string>
+    <string name="btn_saving">Saving…</string>
+
+    <!-- Form — shared -->
+    <string name="hint_title">Title</string>
+    <string name="error_field_required">This field is required</string>
+
+    <!-- Form — Card -->
+    <string name="hint_card_number_inline">Card Number</string>
+    <string name="hint_expiry_month">MM</string>
+    <string name="hint_expiry_year">YY</string>
+    <string name="hint_cvv_inline">CVV</string>
+
 </resources>

@@ -69,7 +69,7 @@
 
     <!-- Semantic aliases (used directly in component styles) -->
     <color name="vault_action_primary">#0052FF</color>    <!-- Solid primary button -->
-    <color name="vault_input_background">#1E293B</color>  <!-- Input field fill -->
+    <color name="vault_input_background">#2E3447</color>  <!-- Input field fill — matches surface_container_highest for contrast on sheet -->
     <color name="vault_card_stroke">#1AFFFFFF</color>     <!-- 10% white inner border -->
     <color name="vault_scrim">#66000000</color>           <!-- Modal overlay -->
 

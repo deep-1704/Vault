@@ -2,78 +2,105 @@ package com.project.vault.ui.home
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.asLiveData
+import androidx.lifecycle.map
 import androidx.lifecycle.viewModelScope
+import com.project.vault.entity.CredentialEntity
+import com.project.vault.repository.CredentialRepository
 import com.project.vault.ui.base.BaseViewModel
+import com.project.vault.ui.home.add.CredentialFormData
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
  * ViewModel for the home screen.
  *
- * Holds a mock list of [Credential] items. When the DB layer is added,
- * replace [_credentials] with a repository call.
- *
- * Loading states for Sync/Share buttons are tracked per item id in
- * [syncingIds] and [sharingIds] and exposed through [buttonLoadingEvent]
- * so the adapter can update individual button states without rebinding
- * the entire list.
+ * - [credentials] is a reactive [LiveData] derived from a Room [Flow]. It updates
+ *   automatically whenever the `credentials` table changes — no manual refresh needed.
+ * - [saveState] tracks the lifecycle of an in-flight save operation so the
+ *   [AddCredentialBottomSheet] can show a loading state and auto-dismiss on success.
+ * - [buttonLoadingEvent] drives per-item Sync/Share button spinners without a full
+ *   list rebind (behaviour retained from the original mock implementation).
  */
 @HiltViewModel
-class HomeViewModel @Inject constructor() : BaseViewModel() {
+class HomeViewModel @Inject constructor(
+    private val repository: CredentialRepository
+) : BaseViewModel() {
 
-    // ── Credential list ──────────────────────────────────────────────────
-
-    private val _credentials = MutableLiveData<List<Credential>>(MOCK_CREDENTIALS)
-    val credentials: LiveData<List<Credential>> = _credentials
-
-    // ── Button loading state ─────────────────────────────────────────────
+    // ── Credential list (reactive, Room-backed) ───────────────────────────────
 
     /**
-     * Emits a [ButtonLoadingEvent] when a button's loading state changes.
-     * The adapter observes this to update a single item without a full rebind.
+     * Maps [CredentialEntity] rows from the DB to the lightweight UI [Credential] model.
+     * [title] is a plaintext column — no decryption needed for list display.
      */
+    val credentials: LiveData<List<Credential>> =
+        repository.getAllFlow()
+            .asLiveData()
+            .map { entities -> entities.map { it.toUiModel() } }
+
+    // ── Save state ────────────────────────────────────────────────────────────
+
+    private val _saveState = MutableLiveData<SaveState>(SaveState.Idle)
+
+    /**
+     * Observed by [AddCredentialBottomSheet] to drive the Save button's loading
+     * state and dismiss the sheet on success.
+     */
+    val saveState: LiveData<SaveState> = _saveState
+
+    /** Resets [saveState] to [SaveState.Idle]. Call when the sheet is opened/dismissed. */
+    fun resetSaveState() {
+        _saveState.value = SaveState.Idle
+    }
+
+    // ── Button loading state ──────────────────────────────────────────────────
+
     private val _buttonLoadingEvent = MutableLiveData<ButtonLoadingEvent>()
     val buttonLoadingEvent: LiveData<ButtonLoadingEvent> = _buttonLoadingEvent
 
-    // Active loading sets — prevent double-taps
-    private val syncingIds = mutableSetOf<Int>()
-    private val sharingIds = mutableSetOf<Int>()
+    private val syncingIds  = mutableSetOf<Int>()
+    private val sharingIds  = mutableSetOf<Int>()
 
-    // ── Actions ──────────────────────────────────────────────────────────
+    // ── Actions ───────────────────────────────────────────────────────────────
+
+    /**
+     * Encrypts [data] and inserts it into Room via [CredentialRepository].
+     * Posts [SaveState.Saving] immediately, then [SaveState.Success] or [SaveState.Error].
+     */
+    fun addCredential(data: CredentialFormData) {
+        if (_saveState.value is SaveState.Saving) return   // guard against double-tap
+        _saveState.value = SaveState.Saving
+        viewModelScope.launch {
+            runCatching { repository.saveCredential(data) }
+                .onSuccess  { _saveState.postValue(SaveState.Success) }
+                .onFailure  { e -> _saveState.postValue(SaveState.Error(e.message ?: "Save failed")) }
+        }
+    }
 
     fun onSyncClicked(credentialId: Int) {
         if (syncingIds.contains(credentialId)) return
         syncingIds.add(credentialId)
-        _buttonLoadingEvent.value = ButtonLoadingEvent(
-            credentialId, ButtonType.SYNC, isLoading = true
-        )
-        viewModelScope.launch {
-            delay(1_000L) // Mock 1-second operation
+        _buttonLoadingEvent.value = ButtonLoadingEvent(credentialId, ButtonType.SYNC, true)
+        launchSafe {
+            kotlinx.coroutines.delay(1_000L) // Mock — replace with real sync call
             syncingIds.remove(credentialId)
-            _buttonLoadingEvent.value = ButtonLoadingEvent(
-                credentialId, ButtonType.SYNC, isLoading = false
-            )
+            _buttonLoadingEvent.postValue(ButtonLoadingEvent(credentialId, ButtonType.SYNC, false))
         }
     }
 
     fun onShareClicked(credentialId: Int) {
         if (sharingIds.contains(credentialId)) return
         sharingIds.add(credentialId)
-        _buttonLoadingEvent.value = ButtonLoadingEvent(
-            credentialId, ButtonType.SHARE, isLoading = true
-        )
-        viewModelScope.launch {
-            delay(1_000L) // Mock 1-second operation
+        _buttonLoadingEvent.value = ButtonLoadingEvent(credentialId, ButtonType.SHARE, true)
+        launchSafe {
+            kotlinx.coroutines.delay(1_000L) // Mock — replace with real share call
             sharingIds.remove(credentialId)
-            _buttonLoadingEvent.value = ButtonLoadingEvent(
-                credentialId, ButtonType.SHARE, isLoading = false
-            )
+            _buttonLoadingEvent.postValue(ButtonLoadingEvent(credentialId, ButtonType.SHARE, false))
         }
     }
 
-    // ── Models ───────────────────────────────────────────────────────────
+    // ── Models ────────────────────────────────────────────────────────────────
 
     enum class ButtonType { SYNC, SHARE }
 
@@ -83,9 +110,22 @@ class HomeViewModel @Inject constructor() : BaseViewModel() {
         val isLoading: Boolean
     )
 
-    // ── Mock data ────────────────────────────────────────────────────────
-
-    companion object {
-        private val MOCK_CREDENTIALS = mutableListOf<Credential>()
+    sealed class SaveState {
+        object Idle    : SaveState()
+        object Saving  : SaveState()
+        object Success : SaveState()
+        data class Error(val message: String) : SaveState()
     }
+
+    // ── Mapping helpers ───────────────────────────────────────────────────────
+
+    private fun CredentialEntity.toUiModel() = Credential(
+        id     = id,
+        title  = title,
+        status = when {
+            isShared -> CredentialStatus.SHARED
+            isSynced -> CredentialStatus.SYNCED
+            else     -> CredentialStatus.OFFLINE
+        }
+    )
 }

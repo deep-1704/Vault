@@ -66,11 +66,11 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
 
     private fun setupFab() {
         binding.fab.setOnClickListener {
-            // TODO: navigate to Add Credential screen
-            // findNavController().navigate(R.id.action_homeFragment_to_addCredentialFragment)
-            showToast("Add credential — coming soon")
+            AddCredentialBottomSheet()
+                .show(childFragmentManager, AddCredentialBottomSheet.TAG)
         }
     }
+
 
     private fun setupHeaderButtons() {
         // Navigate to the new LoginFragment

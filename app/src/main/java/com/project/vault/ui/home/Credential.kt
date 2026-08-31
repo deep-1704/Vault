@@ -1,11 +1,12 @@
 package com.project.vault.ui.home
 
 /**
- * UI-only mock model for the home screen credential list.
+ * Lightweight UI model for the home screen credential list.
  *
- * This is NOT a Room @Entity — it lives in the UI layer exclusively.
- * When the database layer is built out, replace this with a proper
- * @Entity in the entity/ package and a corresponding DAO + Repository method.
+ * This is NOT a Room @Entity — it is mapped from [com.project.vault.entity.CredentialEntity]
+ * inside [HomeViewModel.credentials] so the list view stays decoupled from the DB layer.
+ * Sensitive fields live only inside the encrypted [CredentialEntity.encJsonContent] blob
+ * and are never present here.
  */
 data class Credential(
     val id: Int,
