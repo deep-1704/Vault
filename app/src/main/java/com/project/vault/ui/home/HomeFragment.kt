@@ -126,7 +126,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
 
     private fun showBottomSheet(credential: Credential) {
         CredentialBottomSheet
-            .newInstance(credential.title)
+            .newInstance(credential.id, credential.title)
             .show(childFragmentManager, CredentialBottomSheet.TAG)
     }
 }

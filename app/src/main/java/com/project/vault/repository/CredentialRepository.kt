@@ -64,7 +64,7 @@ class CredentialRepository @Inject constructor(
         )
     }
 
-    // ── Decryption (for detail view) ─────────────────────────────────────────
+    // ── Decryption & Details (for detail view) ──────────────────────────────
 
     /**
      * Decrypts a single entity's [CredentialEntity.encJsonContent] and returns
@@ -73,6 +73,66 @@ class CredentialRepository @Inject constructor(
      */
     fun decryptContent(entity: CredentialEntity): String =
         crypto.decrypt(entity.encJsonContent)
+
+    /**
+     * Retrieves a credential by [id], decrypts its encrypted content, and returns
+     * the typed [CredentialFormData] (either [CardCredentialData] or [LoginCredentialData]).
+     */
+    suspend fun getCredentialDetail(id: Int): CredentialFormData? {
+        val entity = dao.getById(id) ?: return null
+        val decryptedJson = try {
+            decryptContent(entity)
+        } catch (e: Exception) {
+            "{}"
+        }
+        val type = object : com.google.gson.reflect.TypeToken<Map<String, String>>() {}.type
+        val map: Map<String, String> = try {
+            gson.fromJson(decryptedJson, type) ?: emptyMap()
+        } catch (e: Exception) {
+            emptyMap()
+        }
+
+        return when (entity.credType.uppercase()) {
+            "CARD" -> CredentialFormData.CardCredentialData(
+                title       = map["title"] ?: entity.title,
+                holderName  = map["holderName"] ?: "",
+                cardNumber  = map["cardNumber"] ?: "",
+                expiryMonth = map["expiryMonth"] ?: "",
+                expiryYear  = map["expiryYear"] ?: "",
+                cvv         = map["cvv"] ?: ""
+            )
+            "LOGIN" -> CredentialFormData.LoginCredentialData(
+                title    = map["title"] ?: entity.title,
+                username = map["username"] ?: "",
+                password = map["password"] ?: ""
+            )
+            else -> null
+        }
+    }
+
+    /**
+     * Updates an existing credential record with new [formData].
+     */
+    suspend fun updateCredential(id: Int, formData: CredentialFormData) {
+        val existing = dao.getById(id) ?: return
+        val (title, credType, jsonMap) = buildJsonMap(formData)
+        val json = gson.toJson(jsonMap)
+        val ciphertext = crypto.encrypt(json)
+
+        val updated = existing.copy(
+            title          = title,
+            credType       = credType,
+            encJsonContent = ciphertext
+        )
+        dao.update(updated)
+    }
+
+    /**
+     * Deletes a credential from the database by its [id].
+     */
+    suspend fun deleteCredential(id: Int) {
+        dao.deleteById(id)
+    }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -109,3 +169,4 @@ class CredentialRepository @Inject constructor(
             )
         }
 }
+

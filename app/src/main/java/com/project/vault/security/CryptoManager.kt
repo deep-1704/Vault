@@ -7,7 +7,11 @@ import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.security.PrivateKey
 import java.security.PublicKey
+import java.security.spec.MGF1ParameterSpec
+import java.security.spec.RSAKeyGenParameterSpec
 import javax.crypto.Cipher
+import javax.crypto.spec.OAEPParameterSpec
+import javax.crypto.spec.PSource
 
 /**
  * Manages asymmetric RSA-2048 key pairs using the Android Keystore system.
@@ -31,6 +35,13 @@ class CryptoManager {
         load(null)
     }
 
+    private val oaepSpec = OAEPParameterSpec(
+        KeyProperties.DIGEST_SHA256,
+        "MGF1",
+        MGF1ParameterSpec.SHA1,
+        PSource.PSpecified.DEFAULT
+    )
+
     // ── Key lifecycle ────────────────────────────────────────────────────────
 
     /**
@@ -48,7 +59,7 @@ class CryptoManager {
             KEY_ALIAS,
             KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
         )
-            .setAlgorithmParameterSpec(java.security.spec.RSAKeyGenParameterSpec(KEY_SIZE, java.math.BigInteger.valueOf(65537)))
+            .setAlgorithmParameterSpec(RSAKeyGenParameterSpec(KEY_SIZE, java.math.BigInteger.valueOf(65537)))
             .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_RSA_OAEP)
             .setDigests(KeyProperties.DIGEST_SHA256, KeyProperties.DIGEST_SHA1)
             .build()
@@ -72,7 +83,11 @@ class CryptoManager {
      */
     fun encrypt(plaintext: String): String {
         val cipher = Cipher.getInstance(TRANSFORMATION)
-        cipher.init(Cipher.ENCRYPT_MODE, publicKey())
+        try {
+            cipher.init(Cipher.ENCRYPT_MODE, publicKey(), oaepSpec)
+        } catch (_: Exception) {
+            cipher.init(Cipher.ENCRYPT_MODE, publicKey())
+        }
         val encrypted = cipher.doFinal(plaintext.toByteArray(Charsets.UTF_8))
         return Base64.encodeToString(encrypted, Base64.NO_WRAP)
     }
@@ -85,10 +100,30 @@ class CryptoManager {
      * @throws IllegalStateException if the key pair has not been generated yet.
      */
     fun decrypt(ciphertext: String): String {
-        val cipher = Cipher.getInstance(TRANSFORMATION)
-        cipher.init(Cipher.DECRYPT_MODE, privateKey())
-        val decoded = Base64.decode(ciphertext, Base64.NO_WRAP)
-        return String(cipher.doFinal(decoded), Charsets.UTF_8)
+        val trimmed = ciphertext.trim()
+        if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+            return trimmed
+        }
+
+        val decoded = Base64.decode(trimmed, Base64.NO_WRAP)
+
+        return try {
+            val cipher = Cipher.getInstance(TRANSFORMATION)
+            cipher.init(Cipher.DECRYPT_MODE, privateKey(), oaepSpec)
+            String(cipher.doFinal(decoded), Charsets.UTF_8)
+        } catch (e: Exception) {
+            try {
+                val cipher = Cipher.getInstance(TRANSFORMATION)
+                cipher.init(Cipher.DECRYPT_MODE, privateKey())
+                String(cipher.doFinal(decoded), Charsets.UTF_8)
+            } catch (_: Exception) {
+                if (trimmed.startsWith("{")) {
+                    trimmed
+                } else {
+                    throw e
+                }
+            }
+        }
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
@@ -99,6 +134,7 @@ class CryptoManager {
             ?: throw IllegalStateException("RSA key pair not found in Keystore (alias: $KEY_ALIAS)")
         return entry.certificate.publicKey
     }
+
     private fun privateKey(): PrivateKey {
         ensureKeyPair()
         val entry = keyStore.getEntry(KEY_ALIAS, null) as? KeyStore.PrivateKeyEntry

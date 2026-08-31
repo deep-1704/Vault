@@ -16,18 +16,18 @@ import com.project.vault.ui.home.add.LoginFormView
 import dagger.hilt.android.AndroidEntryPoint
 
 /**
- * Bottom sheet shown when the user taps the FAB on the home screen.
+ * Bottom sheet shown when the user taps the FAB (Add Mode) or Edit in CredentialBottomSheet (Edit Mode).
  *
  * Flow:
- *  1. User picks a credential type from the Material Exposed Dropdown.
- *  2. The matching form view ([CardFormView] or [LoginFormView]) is swapped into
- *     [formContainer].
+ *  1. In Add Mode, user picks a credential type from the Material Exposed Dropdown.
+ *     In Edit Mode, type is pre-selected and locked, and the form is populated with existing values.
+ *  2. The matching form view ([CardFormView] or [LoginFormView]) is swapped into [formContainer].
  *  3. On Save:
  *     - The active form is validated (non-empty checks).
  *     - The Save button is disabled and shows "Saving…".
- *     - [HomeViewModel.addCredential] encrypts the data and inserts it into Room.
- *     - On success the sheet auto-dismisses; on failure a toast is shown and the
- *       button is re-enabled.
+ *     - In Add Mode: [HomeViewModel.addCredential] encrypts and inserts into Room.
+ *     - In Edit Mode: [HomeViewModel.updateCredential] encrypts and updates Room.
+ *     - On success the sheet auto-dismisses; on failure a toast is shown and the button is re-enabled.
  */
 @AndroidEntryPoint
 class AddCredentialBottomSheet : BottomSheetDialogFragment() {
@@ -43,7 +43,15 @@ class AddCredentialBottomSheet : BottomSheetDialogFragment() {
     /** Currently active form view — null until the user picks a type. */
     private var activeFormView: View? = null
 
+    private var editCredentialId: Int = -1
+    private val isEditMode get() = editCredentialId != -1
+
     override fun getTheme(): Int = R.style.Theme_Vault_BottomSheet
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        editCredentialId = arguments?.getInt(ARG_EDIT_CREDENTIAL_ID, -1) ?: -1
+    }
 
     // ── Lifecycle ──────────────────────────────────────────────────────────────
 
@@ -62,6 +70,10 @@ class AddCredentialBottomSheet : BottomSheetDialogFragment() {
         setupTypeDropdown()
         setupSaveButton()
         observeSaveState()
+
+        if (isEditMode) {
+            setupEditMode()
+        }
     }
 
     override fun onDestroyView() {
@@ -84,6 +96,29 @@ class AddCredentialBottomSheet : BottomSheetDialogFragment() {
         }
     }
 
+    private fun setupEditMode() {
+        binding.tvSheetTitle.text = getString(R.string.edit_credential_title)
+        binding.tilCredentialType.isEnabled = false
+
+        viewModel.loadCredentialDetail(editCredentialId)
+        viewModel.selectedCredentialDetail.observe(viewLifecycleOwner) { state ->
+            if (state is HomeViewModel.DetailState.Success && state.id == editCredentialId) {
+                when (val data = state.data) {
+                    is CredentialFormData.CardCredentialData -> {
+                        binding.actvCredentialType.setText(getString(R.string.type_card), false)
+                        swapFormView(CredentialType.CARD)
+                        (activeFormView as? CardFormView)?.populate(data)
+                    }
+                    is CredentialFormData.LoginCredentialData -> {
+                        binding.actvCredentialType.setText(getString(R.string.type_login), false)
+                        swapFormView(CredentialType.LOGIN)
+                        (activeFormView as? LoginFormView)?.populate(data)
+                    }
+                }
+            }
+        }
+    }
+
     private fun setupSaveButton() {
         binding.btnSaveAndSync.setOnClickListener {
             // No-op for now as requested
@@ -103,7 +138,11 @@ class AddCredentialBottomSheet : BottomSheetDialogFragment() {
                 else             -> return@setOnClickListener
             }
 
-            viewModel.addCredential(formData)
+            if (isEditMode) {
+                viewModel.updateCredential(editCredentialId, formData)
+            } else {
+                viewModel.addCredential(formData)
+            }
         }
     }
 
@@ -127,8 +166,6 @@ class AddCredentialBottomSheet : BottomSheetDialogFragment() {
                     binding.btnSave.isEnabled = true
                     binding.btnSaveAndSync.isEnabled = true
                     binding.btnSave.text = getString(R.string.btn_save)
-                    // Error is also posted to BaseViewModel.errorLiveData
-                    // which HomeFragment already observes to show a toast.
                 }
             }
         }
@@ -153,5 +190,14 @@ class AddCredentialBottomSheet : BottomSheetDialogFragment() {
 
     companion object {
         const val TAG = "AddCredentialBottomSheet"
+        private const val ARG_EDIT_CREDENTIAL_ID = "arg_edit_credential_id"
+
+        fun newInstance(editCredentialId: Int = -1): AddCredentialBottomSheet {
+            return AddCredentialBottomSheet().apply {
+                arguments = Bundle().apply {
+                    putInt(ARG_EDIT_CREDENTIAL_ID, editCredentialId)
+                }
+            }
+        }
     }
 }

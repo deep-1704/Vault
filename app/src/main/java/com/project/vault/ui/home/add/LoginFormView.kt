@@ -60,6 +60,15 @@ class LoginFormView @JvmOverloads constructor(
     }
 
     /**
+     * Pre-populates the form with existing credential data for edit mode.
+     */
+    fun populate(data: CredentialFormData.LoginCredentialData) {
+        binding.etTitle.setText(data.title)
+        binding.etUsername.setText(data.username)
+        binding.etPassword.setText(data.password)
+    }
+
+    /**
      * Returns the form data. Call [validate] first to ensure fields are non-empty.
      */
     fun getFormData(): CredentialFormData.LoginCredentialData =
@@ -69,3 +78,4 @@ class LoginFormView @JvmOverloads constructor(
             password = binding.etPassword.text.toString().trim()
         )
 }
+

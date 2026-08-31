@@ -37,4 +37,17 @@ interface CredentialDao {
     /** Deletes a credential by its primary key match. */
     @Delete
     suspend fun delete(credential: CredentialEntity)
+
+    /** Returns a single credential by ID, or null if not found. */
+    @Query("SELECT * FROM credentials WHERE id = :id LIMIT 1")
+    suspend fun getById(id: Int): CredentialEntity?
+
+    /** Updates an existing credential record. */
+    @androidx.room.Update
+    suspend fun update(credential: CredentialEntity)
+
+    /** Deletes a credential by ID. */
+    @Query("DELETE FROM credentials WHERE id = :id")
+    suspend fun deleteById(id: Int)
 }
+

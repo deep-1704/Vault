@@ -39,6 +39,32 @@ class HomeViewModel @Inject constructor(
             .asLiveData()
             .map { entities -> entities.map { it.toUiModel() } }
 
+    // ── Credential detail state ───────────────────────────────────────────────
+
+    private val _selectedCredentialDetail = MutableLiveData<DetailState>(DetailState.Idle)
+    val selectedCredentialDetail: LiveData<DetailState> = _selectedCredentialDetail
+
+    fun loadCredentialDetail(credentialId: Int) {
+        _selectedCredentialDetail.value = DetailState.Loading
+        viewModelScope.launch {
+            runCatching { repository.getCredentialDetail(credentialId) }
+                .onSuccess { detail ->
+                    if (detail != null) {
+                        _selectedCredentialDetail.postValue(DetailState.Success(credentialId, detail))
+                    } else {
+                        _selectedCredentialDetail.postValue(DetailState.Error("Credential not found"))
+                    }
+                }
+                .onFailure { e ->
+                    _selectedCredentialDetail.postValue(DetailState.Error(e.message ?: "Failed to load credential"))
+                }
+        }
+    }
+
+    fun resetDetailState() {
+        _selectedCredentialDetail.value = DetailState.Idle
+    }
+
     // ── Save state ────────────────────────────────────────────────────────────
 
     private val _saveState = MutableLiveData<SaveState>(SaveState.Idle)
@@ -75,6 +101,28 @@ class HomeViewModel @Inject constructor(
             runCatching { repository.saveCredential(data) }
                 .onSuccess  { _saveState.postValue(SaveState.Success) }
                 .onFailure  { e -> _saveState.postValue(SaveState.Error(e.message ?: "Save failed")) }
+        }
+    }
+
+    /**
+     * Updates an existing credential record in Room via [CredentialRepository].
+     */
+    fun updateCredential(id: Int, data: CredentialFormData) {
+        if (_saveState.value is SaveState.Saving) return
+        _saveState.value = SaveState.Saving
+        viewModelScope.launch {
+            runCatching { repository.updateCredential(id, data) }
+                .onSuccess  { _saveState.postValue(SaveState.Success) }
+                .onFailure  { e -> _saveState.postValue(SaveState.Error(e.message ?: "Update failed")) }
+        }
+    }
+
+    /**
+     * Deletes a credential from Room by [id].
+     */
+    fun deleteCredential(id: Int) {
+        launchSafe {
+            repository.deleteCredential(id)
         }
     }
 
@@ -117,6 +165,13 @@ class HomeViewModel @Inject constructor(
         data class Error(val message: String) : SaveState()
     }
 
+    sealed class DetailState {
+        object Idle    : DetailState()
+        object Loading : DetailState()
+        data class Success(val id: Int, val data: CredentialFormData) : DetailState()
+        data class Error(val message: String) : DetailState()
+    }
+
     // ── Mapping helpers ───────────────────────────────────────────────────────
 
     private fun CredentialEntity.toUiModel() = Credential(
@@ -129,3 +184,4 @@ class HomeViewModel @Inject constructor(
         }
     )
 }
+

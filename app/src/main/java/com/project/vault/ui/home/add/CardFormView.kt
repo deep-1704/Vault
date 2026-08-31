@@ -63,6 +63,18 @@ class CardFormView @JvmOverloads constructor(
     }
 
     /**
+     * Pre-populates the form with existing credential data for edit mode.
+     */
+    fun populate(data: CredentialFormData.CardCredentialData) {
+        binding.etTitle.setText(data.title)
+        binding.etHolderName.setText(data.holderName)
+        binding.etCardNumber.setText(data.cardNumber)
+        binding.etExpiryMonth.setText(data.expiryMonth)
+        binding.etExpiryYear.setText(data.expiryYear)
+        binding.etCvv.setText(data.cvv)
+    }
+
+    /**
      * Returns the form data. Call [validate] first to ensure fields are non-empty.
      */
     fun getFormData(): CredentialFormData.CardCredentialData =
@@ -75,3 +87,4 @@ class CardFormView @JvmOverloads constructor(
             cvv         = binding.etCvv.text.toString().trim()
         )
 }
+
