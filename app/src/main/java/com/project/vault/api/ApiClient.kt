@@ -8,15 +8,14 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 /**
- * Singleton Retrofit + OkHttp client.
+ * Retrofit + OkHttp client factory and configuration.
  *
  * - Logging is BODY level in debug builds, NONE in release.
  * - Timeouts: 30 s connect / read / write.
- * - Replace [BASE_URL] with the real API endpoint before making any calls.
  */
 object ApiClient {
 
-    private const val BASE_URL = "https://api.example.com/"
+    const val BASE_URL = "http://172.28.19.217:8080/"
     private const val TIMEOUT_SECONDS = 30L
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
@@ -27,16 +26,30 @@ object ApiClient {
         }
     }
 
-    private val okHttpClient = OkHttpClient.Builder()
-        .connectTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
-        .readTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
-        .writeTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
-        .addInterceptor(loggingInterceptor)
-        .build()
+    fun createOkHttpClient(basicAuthInterceptor: BasicAuthInterceptor? = null): OkHttpClient {
+        val builder = OkHttpClient.Builder()
+            .connectTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .readTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .writeTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
 
-    val retrofit: Retrofit = Retrofit.Builder()
-        .baseUrl(BASE_URL)
-        .client(okHttpClient)
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
+        if (basicAuthInterceptor != null) {
+            builder.addInterceptor(basicAuthInterceptor)
+        }
+
+        builder.addInterceptor(loggingInterceptor)
+        return builder.build()
+    }
+
+    fun createRetrofit(okHttpClient: OkHttpClient): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
+
+    val retrofit: Retrofit by lazy {
+        createRetrofit(createOkHttpClient())
+    }
 }
+

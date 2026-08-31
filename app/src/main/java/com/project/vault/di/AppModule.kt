@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.project.vault.AppDatabase
 import com.project.vault.api.ApiClient
 import com.project.vault.api.ApiService
+import com.project.vault.api.BasicAuthInterceptor
 import com.project.vault.entity.dao.CredentialDao
 import com.project.vault.security.CryptoManager
 import dagger.Module
@@ -38,8 +39,14 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideApiService(): ApiService {
-        return ApiClient.retrofit.create(ApiService::class.java)
+    fun provideOkHttpClient(basicAuthInterceptor: BasicAuthInterceptor): okhttp3.OkHttpClient {
+        return ApiClient.createOkHttpClient(basicAuthInterceptor)
+    }
+
+    @Provides
+    @Singleton
+    fun provideApiService(okHttpClient: okhttp3.OkHttpClient): ApiService {
+        return ApiClient.createRetrofit(okHttpClient).create(ApiService::class.java)
     }
 
     /**

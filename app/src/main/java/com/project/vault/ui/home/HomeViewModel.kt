@@ -25,8 +25,16 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val repository: CredentialRepository
+    private val repository: CredentialRepository,
+    private val authRepository: com.project.vault.repository.AuthRepository
 ) : BaseViewModel() {
+
+    val isLoggedIn: LiveData<Boolean> = authRepository.isLoggedIn.asLiveData()
+    val currentUsername: LiveData<String?> = authRepository.currentUsername.asLiveData()
+
+    fun logout() {
+        authRepository.logout()
+    }
 
     // ── Credential list (reactive, Room-backed) ───────────────────────────────
 

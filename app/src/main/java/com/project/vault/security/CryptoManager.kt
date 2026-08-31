@@ -126,6 +126,14 @@ class CryptoManager {
         }
     }
 
+    /**
+     * Returns the RSA public key encoded as a Base64 X.509 SubjectPublicKeyInfo string.
+     */
+    fun getPublicKeyBase64(): String {
+        val pubKey = publicKey()
+        return Base64.encodeToString(pubKey.encoded, Base64.NO_WRAP)
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     private fun publicKey(): PublicKey {

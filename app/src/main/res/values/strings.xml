@@ -89,4 +89,10 @@
     <string name="biometric_auth_failed">Authentication failed</string>
     <string name="biometric_not_available">Biometric authentication is unavailable on this device</string>
 
+    <!-- Logout Dialog Strings -->
+    <string name="action_logout">Logout</string>
+    <string name="logout_confirmation_title">Log out</string>
+    <string name="logout_confirmation_message">Are you sure you want to log out of your Vault account?</string>
+    <string name="logged_out_success">Logged out successfully</string>
+
 </resources>

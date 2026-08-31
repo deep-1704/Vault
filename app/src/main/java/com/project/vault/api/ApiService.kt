@@ -1,17 +1,33 @@
 package com.project.vault.api
 
-import retrofit2.http.GET
+import com.project.vault.api.dto.LoginRequest
+import com.project.vault.api.dto.SignupRequest
+import retrofit2.Response
+import retrofit2.http.Body
+import retrofit2.http.Header
+import retrofit2.http.POST
 
 /**
- * Retrofit service interface.
- *
- * Add endpoint declarations here as the app's features are built out.
- * Each function should be a suspend function returning the expected response type.
- *
- * Example:
- *   @GET("items")
- *   suspend fun getItems(): List<ItemDto>
+ * Retrofit service interface defining Vault Sync API endpoints.
  */
 interface ApiService {
-    // Endpoints will be declared here per feature.
+
+    /**
+     * Registers a new user account and registers their initial device.
+     */
+    @POST("auth/signup")
+    suspend fun signup(
+        @Body request: SignupRequest
+    ): Response<Unit>
+
+    /**
+     * Authenticates an existing user and registers a new/active device.
+     * Requires HTTP Basic Auth in the [basicAuth] header.
+     */
+    @POST("auth/login")
+    suspend fun login(
+        @Header("Authorization") basicAuth: String,
+        @Body request: LoginRequest
+    ): Response<Unit>
 }
+

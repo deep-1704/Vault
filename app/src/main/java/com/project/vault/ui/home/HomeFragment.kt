@@ -58,7 +58,6 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
         observeViewModel()
         setupFab()
         setupHeaderButtons()
-        observeNavigationResults()
     }
 
     // ── Setup ────────────────────────────────────────────────────────────
@@ -78,29 +77,48 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
     }
 
     private fun setupHeaderButtons() {
-        // Navigate to the new LoginFragment
+        // Navigate to the LoginFragment
         binding.btnLogin.setOnClickListener {
             findNavController().navigate(R.id.action_homeFragment_to_loginFragment)
         }
 
-        // Clicking profile resets the login state in SavedStateHandle and local UI
-        binding.btnProfile.setOnClickListener {
-            findNavController().currentBackStackEntry?.savedStateHandle?.set(
-                LoginFragment.KEY_IS_LOGGED_IN,
-                false
-            )
-            updateLoginUiState(isLoggedIn = false)
-            showToast("Logged out (Mock)")
+        // Clicking profile opens a popup menu with Logout option
+        binding.btnProfile.setOnClickListener { anchorView ->
+            showProfilePopupMenu(anchorView)
         }
     }
 
-    private fun observeNavigationResults() {
-        // Observe login state results passed back from LoginFragment
-        findNavController().currentBackStackEntry?.savedStateHandle
-            ?.getLiveData<Boolean>(LoginFragment.KEY_IS_LOGGED_IN)
-            ?.observe(viewLifecycleOwner) { isLoggedIn ->
-                updateLoginUiState(isLoggedIn)
+    private fun showProfilePopupMenu(anchorView: View) {
+        val popup = androidx.appcompat.widget.PopupMenu(requireContext(), anchorView)
+        val username = viewModel.currentUsername.value
+        if (!username.isNullOrBlank()) {
+            popup.menu.add(0, 1, 0, username).apply {
+                isEnabled = false
             }
+        }
+        popup.menu.add(0, 2, 1, getString(R.string.action_logout))
+
+        popup.setOnMenuItemClickListener { menuItem ->
+            if (menuItem.itemId == 2) {
+                showLogoutConfirmationDialog()
+                true
+            } else {
+                false
+            }
+        }
+        popup.show()
+    }
+
+    private fun showLogoutConfirmationDialog() {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.logout_confirmation_title)
+            .setMessage(R.string.logout_confirmation_message)
+            .setPositiveButton(R.string.action_logout) { _, _ ->
+                viewModel.logout()
+                showToast(getString(R.string.logged_out_success))
+            }
+            .setNegativeButton(R.string.btn_cancel, null)
+            .show()
     }
 
     private fun updateLoginUiState(isLoggedIn: Boolean) {
@@ -111,6 +129,9 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
     // ── Observation ──────────────────────────────────────────────────────
 
     private fun observeViewModel() {
+        viewModel.isLoggedIn.observe(viewLifecycleOwner) { isLoggedIn ->
+            updateLoginUiState(isLoggedIn)
+        }
         viewModel.credentials.observe(viewLifecycleOwner) { credentials ->
             adapter.submitList(credentials)
 

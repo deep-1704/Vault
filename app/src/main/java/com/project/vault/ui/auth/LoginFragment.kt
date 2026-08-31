@@ -4,6 +4,8 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.isVisible
+import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import com.project.vault.databinding.FragmentLoginBinding
 import com.project.vault.ui.base.BaseFragment
@@ -19,6 +21,8 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class LoginFragment : BaseFragment<FragmentLoginBinding>() {
 
+    private val viewModel: AuthViewModel by viewModels()
+
     override fun getViewBinding(
         inflater: LayoutInflater,
         container: ViewGroup?
@@ -26,34 +30,55 @@ class LoginFragment : BaseFragment<FragmentLoginBinding>() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        observeErrors(viewModel)
+        setupActions()
+        observeViewModel()
+    }
 
+    private fun setupActions() {
         // Login submission action
         binding.btnSubmitLogin.setOnClickListener {
             val username = binding.etUsername.text.toString().trim()
-            val password = binding.etPassword.text.toString().trim()
-
-            if (username.isEmpty() || password.isEmpty()) {
-                showToast("Please fill in all fields")
-                return@setOnClickListener
-            }
-
-            showToast("Logged in successfully (Mock)")
-            completeAuthentication()
+            val password = binding.etPassword.text.toString()
+            viewModel.login(username, password)
         }
 
         // Account creation action
         binding.btnCreateAccount.setOnClickListener {
             val username = binding.etUsername.text.toString().trim()
-            val password = binding.etPassword.text.toString().trim()
-
-            if (username.isEmpty() || password.isEmpty()) {
-                showToast("Please fill in all fields")
-                return@setOnClickListener
-            }
-
-            showToast("Account created successfully (Mock)")
-            completeAuthentication()
+            val password = binding.etPassword.text.toString()
+            viewModel.signup(username, password)
         }
+    }
+
+    private fun observeViewModel() {
+        viewModel.uiState.observe(viewLifecycleOwner) { state ->
+            when (state) {
+                is AuthUiState.Idle -> {
+                    setLoading(false)
+                }
+                is AuthUiState.Loading -> {
+                    setLoading(true)
+                }
+                is AuthUiState.Success -> {
+                    setLoading(false)
+                    showToast(state.message)
+                    completeAuthentication()
+                }
+                is AuthUiState.Error -> {
+                    setLoading(false)
+                    showToast(state.message)
+                }
+            }
+        }
+    }
+
+    private fun setLoading(isLoading: Boolean) {
+        binding.progressBarAuth.isVisible = isLoading
+        binding.btnSubmitLogin.isEnabled = !isLoading
+        binding.btnCreateAccount.isEnabled = !isLoading
+        binding.etUsername.isEnabled = !isLoading
+        binding.etPassword.isEnabled = !isLoading
     }
 
     /**
@@ -68,3 +93,4 @@ class LoginFragment : BaseFragment<FragmentLoginBinding>() {
         const val KEY_IS_LOGGED_IN = "is_logged_in"
     }
 }
+
