@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit
  */
 object ApiClient {
 
-    const val BASE_URL = "http://172.28.19.217:8080/"
+    const val BASE_URL = "http://192.168.1.4:8080/"
     private const val TIMEOUT_SECONDS = 30L
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
