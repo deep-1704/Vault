@@ -7,6 +7,7 @@ import androidx.lifecycle.map
 import androidx.lifecycle.viewModelScope
 import com.project.vault.entity.CredentialEntity
 import com.project.vault.repository.CredentialRepository
+import com.project.vault.repository.SyncRepository
 import com.project.vault.ui.base.BaseViewModel
 import com.project.vault.ui.home.add.CredentialFormData
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -22,10 +23,14 @@ import javax.inject.Inject
  *   [AddCredentialBottomSheet] can show a loading state and auto-dismiss on success.
  * - [buttonLoadingEvent] drives per-item Sync/Share button spinners without a full
  *   list rebind (behaviour retained from the original mock implementation).
+ * - [syncState] carries one-shot error events from the sync pipeline so
+ *   [HomeFragment] can show a Snackbar; successful syncs are reflected automatically
+ *   through Room's reactive Flow updating the credential chip.
  */
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val repository: CredentialRepository,
+    private val syncRepository: SyncRepository,
     private val authRepository: com.project.vault.repository.AuthRepository
 ) : BaseViewModel() {
 
@@ -96,6 +101,43 @@ class HomeViewModel @Inject constructor(
     private val syncingIds  = mutableSetOf<Int>()
     private val sharingIds  = mutableSetOf<Int>()
 
+    // ── Sync state (error reporting) ──────────────────────────────────────────
+
+    private val _syncState = MutableLiveData<SyncState>(SyncState.Idle)
+
+    /**
+     * Observed by [HomeFragment] to show a Snackbar on sync error.
+     * Successful syncs need no explicit signal — Room's reactive Flow automatically
+     * updates the credential chip from OFFLINE → SYNCED.
+     */
+    val syncState: LiveData<SyncState> = _syncState
+
+    /** Resets [syncState] to [SyncState.Idle] after the error has been consumed. */
+    fun resetSyncState() {
+        _syncState.value = SyncState.Idle
+    }
+
+    // ── Global refresh state ──────────────────────────────────────────────────
+
+    private val _isRefreshing = MutableLiveData(false)
+
+    /** True while a global refresh is in progress — drives the spinner on [btnRefresh]. */
+    val isRefreshing: LiveData<Boolean> = _isRefreshing
+
+    private val _refreshResultState = MutableLiveData<RefreshResultState>(RefreshResultState.Idle)
+
+    /**
+     * One-shot result of the global refresh — observed by [HomeFragment] to show a Snackbar.
+     * Reset to [RefreshResultState.Idle] after the event has been consumed.
+     */
+    val refreshResultState: LiveData<RefreshResultState> = _refreshResultState
+
+    /** Resets [refreshResultState] to [RefreshResultState.Idle] after consumption. */
+    fun resetRefreshResultState() {
+        _refreshResultState.value = RefreshResultState.Idle
+    }
+
+
     // ── Actions ───────────────────────────────────────────────────────────────
 
     /**
@@ -136,10 +178,27 @@ class HomeViewModel @Inject constructor(
 
     fun onSyncClicked(credentialId: Int) {
         if (syncingIds.contains(credentialId)) return
+
+        // Auth guard — biometric is checked in the Fragment before this is called,
+        // but we double-check session validity here as a safety net.
+        if (authRepository.isLoggedIn.value != true) {
+            _syncState.postValue(SyncState.Error("You must be logged in to sync"))
+            return
+        }
+
         syncingIds.add(credentialId)
         _buttonLoadingEvent.value = ButtonLoadingEvent(credentialId, ButtonType.SYNC, true)
+
         launchSafe {
-            kotlinx.coroutines.delay(1_000L) // Mock — replace with real sync call
+            runCatching { syncRepository.syncCredential(credentialId) }
+                .onSuccess {
+                    // Room's reactive Flow automatically updates the credential chip —
+                    // no additional UI action needed here.
+                }
+                .onFailure { e ->
+                    _syncState.postValue(SyncState.Error(e.message ?: "Sync failed"))
+                }
+
             syncingIds.remove(credentialId)
             _buttonLoadingEvent.postValue(ButtonLoadingEvent(credentialId, ButtonType.SYNC, false))
         }
@@ -153,6 +212,40 @@ class HomeViewModel @Inject constructor(
             kotlinx.coroutines.delay(1_000L) // Mock — replace with real share call
             sharingIds.remove(credentialId)
             _buttonLoadingEvent.postValue(ButtonLoadingEvent(credentialId, ButtonType.SHARE, false))
+        }
+    }
+
+    /**
+     * Triggers the global refresh pipeline after biometric auth succeeds in [HomeFragment].
+     * Guards against re-entrancy while a refresh is already running.
+     *
+     * The pipeline:
+     *  1. Calls [SyncRepository.globalRefresh] with the stored device ID.
+     *  2. Posts [isRefreshing] = true/false before/after the operation.
+     *  3. Posts [RefreshResultState.Success] or [RefreshResultState.Error] when done.
+     */
+    fun onGlobalRefreshClicked() {
+        if (_isRefreshing.value == true) return   // guard against double-tap
+
+        if (authRepository.isLoggedIn.value != true) {
+            _refreshResultState.postValue(RefreshResultState.Error("You must be logged in to refresh"))
+            return
+        }
+
+        val deviceId = authRepository.getDeviceId()
+
+        _isRefreshing.value = true
+        launchSafe {
+            runCatching { syncRepository.globalRefresh(deviceId) }
+                .onSuccess { result ->
+                    _refreshResultState.postValue(RefreshResultState.Success(result))
+                }
+                .onFailure { e ->
+                    _refreshResultState.postValue(
+                        RefreshResultState.Error(e.message ?: "Refresh failed")
+                    )
+                }
+            _isRefreshing.postValue(false)
         }
     }
 
@@ -173,11 +266,32 @@ class HomeViewModel @Inject constructor(
         data class Error(val message: String) : SaveState()
     }
 
+    /**
+     * One-shot state for the sync pipeline.
+     * [Idle] is the resting state; [Error] is emitted when the pipeline fails.
+     * Success is signalled implicitly through Room's reactive Flow updating [isSynced].
+     */
+    sealed class SyncState {
+        object Idle                              : SyncState()
+        data class Error(val message: String)    : SyncState()
+    }
+
     sealed class DetailState {
         object Idle    : DetailState()
         object Loading : DetailState()
         data class Success(val id: Int, val data: CredentialFormData) : DetailState()
         data class Error(val message: String) : DetailState()
+    }
+
+    /**
+     * One-shot result state for the global refresh button.
+     * [Success] carries the [SyncRepository.RefreshResult] summary for the Snackbar.
+     * [Error] is posted when the pipeline fails at the network level.
+     */
+    sealed class RefreshResultState {
+        object Idle : RefreshResultState()
+        data class Success(val result: com.project.vault.repository.SyncRepository.RefreshResult) : RefreshResultState()
+        data class Error(val message: String) : RefreshResultState()
     }
 
     // ── Mapping helpers ───────────────────────────────────────────────────────

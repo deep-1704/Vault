@@ -49,5 +49,10 @@ interface CredentialDao {
     /** Deletes a credential by ID. */
     @Query("DELETE FROM credentials WHERE id = :id")
     suspend fun deleteById(id: Int)
+
+    /** Returns a one-shot snapshot of all credentials (used for batch operations). */
+    @Query("SELECT * FROM credentials")
+    suspend fun getAllSync(): List<CredentialEntity>
 }
+
 

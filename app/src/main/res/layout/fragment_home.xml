@@ -50,17 +50,52 @@
         android:id="@+id/btnProfile"
         android:layout_width="44dp"
         android:layout_height="44dp"
-        android:layout_marginEnd="20dp"
+        android:layout_marginEnd="8dp"
         android:src="@drawable/ic_profile"
         android:scaleType="fitCenter"
         android:padding="8dp"
         android:background="?android:attr/selectableItemBackgroundBorderless"
         android:contentDescription="Profile"
         android:visibility="gone"
+        app:layout_constraintEnd_toStartOf="@id/btnRefresh"
+        app:layout_constraintTop_toTopOf="@id/tvTitle"
+        app:layout_constraintBottom_toBottomOf="@id/tvEntryCount"
+        tools:visibility="visible" />
+
+    <!-- ── Global Refresh button (Shown when logged in, beside profile) ── -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnRefresh"
+        style="@style/Widget.Material3.Button.IconButton.Filled"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_marginEnd="20dp"
+        android:contentDescription="Refresh sync"
+        android:visibility="gone"
+        app:icon="@drawable/ic_sync"
+        app:iconSize="20dp"
+        app:iconGravity="textStart"
+        app:iconPadding="0dp"
+        app:backgroundTint="@color/vault_primary_container"
+        app:iconTint="@color/vault_on_primary_container"
+        app:cornerRadius="22dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@id/tvTitle"
         app:layout_constraintBottom_toBottomOf="@id/tvEntryCount"
         tools:visibility="visible" />
+
+    <com.google.android.material.progressindicator.CircularProgressIndicator
+        android:id="@+id/progressRefresh"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:indeterminate="true"
+        android:visibility="gone"
+        app:indicatorSize="20dp"
+        app:trackThickness="2.5dp"
+        app:indicatorColor="@color/vault_on_primary_container"
+        app:layout_constraintStart_toStartOf="@id/btnRefresh"
+        app:layout_constraintEnd_toEndOf="@id/btnRefresh"
+        app:layout_constraintTop_toTopOf="@id/btnRefresh"
+        app:layout_constraintBottom_toBottomOf="@id/btnRefresh" />
 
     <!-- ── Scrollable list (RecyclerView) ───────────────────────── -->
     <!-- ClipToPadding is set to false with a bottom padding of 88dp so

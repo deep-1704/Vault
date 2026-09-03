@@ -83,6 +83,7 @@
     <!-- Biometric Strings -->
     <string name="biometric_prompt_title">Unlock Vault</string>
     <string name="biometric_prompt_subtitle">Authenticate to view and manage credential</string>
+    <string name="biometric_sync_subtitle">Authenticate to sync \"%s\" to all your devices</string>
     <string name="biometric_unenrolled_title">Security Setup Required</string>
     <string name="biometric_unenrolled_message">You must register a fingerprint or screen lock on your device to access secure credentials.</string>
     <string name="btn_open_settings">Open Settings</string>
@@ -94,5 +95,11 @@
     <string name="logout_confirmation_title">Log out</string>
     <string name="logout_confirmation_message">Are you sure you want to log out of your Vault account?</string>
     <string name="logged_out_success">Logged out successfully</string>
+
+    <!-- Refresh / Global Sync Strings -->
+    <string name="biometric_refresh_subtitle">Authenticate to refresh and sync all credentials</string>
+    <string name="refresh_success">Synced %1$d · %2$d new imported</string>
+    <string name="refresh_success_with_failures">Synced %1$d · %2$d new · %3$d failed</string>
+    <string name="refresh_error">Refresh failed: %s</string>
 
 </resources>

@@ -1,0 +1,184 @@
+package com.project.vault.repository
+
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import com.project.vault.api.ApiService
+import com.project.vault.api.dto.SyncItemRequest
+import com.project.vault.entity.CredentialEntity
+import com.project.vault.entity.dao.CredentialDao
+import com.project.vault.security.AuthSessionManager
+import com.project.vault.security.CryptoManager
+import javax.inject.Inject
+import javax.inject.Singleton
+
+/**
+ * Orchestrates the full credential sync pipeline:
+ *
+ *  1. Verify the user is authenticated.
+ *  2. Fetch the credential from Room and decrypt its [encJsonContent].
+ *  3. Fetch all of the user's registered devices via GET /device.
+ *  4. For each device, re-encrypt the plaintext JSON using that device's RSA public
+ *     key (hybrid AES-256-GCM + RSA-OAEP via [CryptoManager.encryptWithPublicKey]).
+ *  5. POST the list of per-device encrypted items to /sync.
+ *  6. On success, update the local [CredentialEntity] with the server-assigned ID
+ *     ([serverId]) and mark [isSynced] = true.
+ */
+@Singleton
+class SyncRepository @Inject constructor(
+    private val apiService: ApiService,
+    private val dao: CredentialDao,
+    private val crypto: CryptoManager,
+    private val session: AuthSessionManager
+) {
+
+    private val gson = Gson()
+
+    /**
+     * Syncs the credential identified by [credentialId] (local Room PK) to all of
+     * the authenticated user's registered devices.
+     *
+     * @throws IllegalStateException if the user is not logged in.
+     * @throws IllegalArgumentException if no credential with [credentialId] exists.
+     * @throws Exception on any network or server error (propagates to the caller).
+     */
+    suspend fun syncCredential(credentialId: Int) {
+        // 1. Auth guard
+        if (!session.hasValidSession()) {
+            throw IllegalStateException("You must be logged in to sync")
+        }
+
+        // 2. Load and decrypt the credential
+        val entity = dao.getById(credentialId)
+            ?: throw IllegalArgumentException("Credential #$credentialId not found in local database")
+        val plaintextJson = crypto.decrypt(entity.encJsonContent)
+
+        // 3. Fetch all user devices
+        val devicesResponse = apiService.getDevices()
+        if (!devicesResponse.isSuccessful) {
+            val code = devicesResponse.code()
+            throw Exception("Failed to fetch devices (HTTP $code)")
+        }
+        val devices = devicesResponse.body()
+            ?: throw Exception("Empty device list returned from server")
+
+        if (devices.isEmpty()) {
+            throw Exception("No registered devices found for this account")
+        }
+
+        // 4. Build per-device sync items — encrypt content for each device individually
+        val serverCredId = entity.serverId?.toLongOrNull() // null on first sync
+        val syncItems = devices.map { device ->
+            val encContent = crypto.encryptWithPublicKey(plaintextJson, device.publicKey)
+            SyncItemRequest(
+                deviceId     = device.id,
+                credentialId = serverCredId,
+                content      = encContent
+            )
+        }
+
+        // 5. POST to /sync
+        val syncResponse = apiService.syncCredential(syncItems)
+        if (!syncResponse.isSuccessful) {
+            val code = syncResponse.code()
+            throw Exception("Sync failed (HTTP $code)")
+        }
+        val syncResult = syncResponse.body()
+            ?: throw Exception("Empty response from sync server")
+
+        // 6. Update Room — store server ID and mark as synced
+        dao.update(
+            entity.copy(
+                serverId = syncResult.id.toString(),
+                isSynced = true
+            )
+        )
+    }
+
+    /**
+     * Result of a global refresh operation.
+     *
+     * @param newImported Number of credentials pulled from the server and saved locally.
+     * @param resynced    Number of already-synced local credentials successfully re-synced.
+     * @param failed      Number of credentials that failed to sync (skipped gracefully).
+     */
+    data class RefreshResult(
+        val newImported: Int,
+        val resynced: Int,
+        val failed: Int
+    )
+
+    /**
+     * Performs a full global refresh for the given [deviceId]:
+     *
+     *  1. Calls `GET /sync/{deviceId}` to fetch all server items for this device.
+     *  2. For each server item, checks if a local credential with that [serverId] already
+     *     exists in Room. If not, decrypts the server payload and inserts it as a new
+     *     [CredentialEntity] with [isSynced] = true.
+     *  3. Queries Room for all local credentials where [isSynced] = true and re-syncs
+     *     each one via [syncCredential].
+     *  4. Returns a [RefreshResult] summarising how many were imported, re-synced, and failed.
+     *
+     * Individual credential failures are skipped gracefully — all others still complete.
+     *
+     * @throws IllegalStateException if the user is not logged in.
+     * @throws Exception if the initial `GET /sync/{deviceId}` network call fails.
+     */
+    suspend fun globalRefresh(deviceId: String): RefreshResult {
+        if (!session.hasValidSession()) {
+            throw IllegalStateException("You must be logged in to sync")
+        }
+
+        val initialEntities = dao.getAllSync()
+
+        // 1. Fetch all synced items from the server for this device
+        val fetchResponse = apiService.getSyncedItems(deviceId)
+        if (!fetchResponse.isSuccessful) {
+            throw Exception("Failed to fetch synced items (HTTP ${fetchResponse.code()})")
+        }
+        val serverItems = fetchResponse.body() ?: emptyList()
+
+        // 2. Import any server credentials not present locally
+        var newImported = 0
+        for (item in serverItems) {
+            val serverIdStr = item.credentialId.toString()
+            val currentEntities = dao.getAllSync()
+            val alreadyExists = currentEntities.any { it.serverId == serverIdStr }
+            if (!alreadyExists) {
+                runCatching {
+                    val plaintextJson = crypto.decrypt(item.content)
+                    val mapType = object : TypeToken<Map<String, String>>() {}.type
+                    val map: Map<String, String> = gson.fromJson(plaintextJson, mapType) ?: emptyMap()
+                    val title    = map["title"]?.takeIf { it.isNotBlank() } ?: "Untitled"
+                    val credType = map["credType"]?.takeIf { it.isNotBlank() } ?: "LOGIN"
+                    dao.insert(
+                        CredentialEntity(
+                            title          = title,
+                            credType       = credType,
+                            encJsonContent = crypto.encrypt(plaintextJson),
+                            serverId       = serverIdStr,
+                            isSynced       = true
+                        )
+                    )
+                }.onSuccess {
+                    newImported++
+                    android.util.Log.d("SyncRepository", "Successfully imported server credential #$serverIdStr")
+                }.onFailure { e ->
+                    android.util.Log.e("SyncRepository", "Failed to import server credential #$serverIdStr", e)
+                }
+            }
+        }
+
+        // 3. Re-sync all local credentials that were already synced prior to this refresh
+        var resynced = 0
+        var failed   = 0
+        val preSyncedEntities = initialEntities.filter { it.isSynced }
+        for (entity in preSyncedEntities) {
+            runCatching { syncCredential(entity.id) }
+                .onSuccess { resynced++ }
+                .onFailure { failed++ }
+        }
+
+        return RefreshResult(newImported = newImported, resynced = resynced, failed = failed)
+    }
+}
+
