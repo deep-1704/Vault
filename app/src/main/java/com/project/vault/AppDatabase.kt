@@ -24,7 +24,7 @@ import com.project.vault.entity.dao.CredentialDao
  */
 @Database(
     entities = [CredentialEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -55,6 +55,16 @@ abstract class AppDatabase : RoomDatabase() {
                     )
                     """.trimIndent()
                 )
+            }
+        }
+
+        /**
+         * Migration 2 → 3:
+         *  - Adds `last_synced_at` column to `credentials` table.
+         */
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `credentials` ADD COLUMN `last_synced_at` INTEGER")
             }
         }
     }

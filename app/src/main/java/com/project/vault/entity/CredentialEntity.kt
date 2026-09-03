@@ -33,6 +33,9 @@ data class CredentialEntity(
     @ColumnInfo(name = "is_synced")
     val isSynced: Boolean = false,
 
+    @ColumnInfo(name = "last_synced_at")
+    val lastSyncedAt: Long? = null,
+
     val title: String,
 
     @ColumnInfo(name = "cred_type")

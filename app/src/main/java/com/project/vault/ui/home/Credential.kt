@@ -11,7 +11,8 @@ package com.project.vault.ui.home
 data class Credential(
     val id: Int,
     val title: String,
-    val status: CredentialStatus
+    val status: CredentialStatus,
+    val lastSyncedAt: Long? = null
 )
 
 enum class CredentialStatus {

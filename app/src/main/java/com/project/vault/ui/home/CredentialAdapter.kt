@@ -9,6 +9,9 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.chip.Chip
 import com.project.vault.R
 import com.project.vault.databinding.ItemCredentialBinding
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * RecyclerView adapter for the credential list.
@@ -84,8 +87,18 @@ class CredentialAdapter(
         private val binding: ItemCredentialBinding
     ) : RecyclerView.ViewHolder(binding.root) {
 
+        private val dateFormat = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
+
         fun bind(credential: Credential) {
             binding.tvCredentialTitle.text = credential.title
+
+            if (credential.lastSyncedAt != null) {
+                binding.tvLastSynced.text = "Last synced: " + dateFormat.format(Date(credential.lastSyncedAt))
+                binding.tvLastSynced.isVisible = true
+            } else {
+                binding.tvLastSynced.isVisible = false
+            }
+
             applyStatusChip(binding.chipStatus, credential.status)
             bindButtonStates(credential)
 

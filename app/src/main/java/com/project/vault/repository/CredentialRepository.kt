@@ -49,19 +49,22 @@ class CredentialRepository @Inject constructor(
      *
      * Must be called from a coroutine (suspend function). Any exception from
      * [CryptoManager] or Room propagates to the caller.
+     *
+     * @return The local auto-generated primary key ID of the inserted entity.
      */
-    suspend fun saveCredential(formData: CredentialFormData) {
+    suspend fun saveCredential(formData: CredentialFormData): Int {
         val (title, credType, jsonMap) = buildJsonMap(formData)
         val json        = gson.toJson(jsonMap)
         val ciphertext  = crypto.encrypt(json)
 
-        dao.insert(
+        val insertedId = dao.insert(
             CredentialEntity(
                 title          = title,
                 credType       = credType,
                 encJsonContent = ciphertext
             )
         )
+        return insertedId.toInt()
     }
 
     // ── Decryption & Details (for detail view) ──────────────────────────────
@@ -126,6 +129,11 @@ class CredentialRepository @Inject constructor(
         )
         dao.update(updated)
     }
+
+    /**
+     * Retrieves the raw [CredentialEntity] by its local [id].
+     */
+    suspend fun getEntityById(id: Int): CredentialEntity? = dao.getById(id)
 
     /**
      * Deletes a credential from the database by its [id].

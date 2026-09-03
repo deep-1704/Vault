@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import android.widget.Toast
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
@@ -115,29 +116,50 @@ class AddCredentialBottomSheet : BottomSheetDialogFragment() {
                         (activeFormView as? LoginFormView)?.populate(data)
                     }
                 }
+
+                if (state.isSynced) {
+                    binding.btnSaveAndSync.isVisible = false
+                    binding.btnSave.isVisible = true
+                    binding.btnSave.backgroundTintList =
+                        androidx.core.content.ContextCompat.getColorStateList(requireContext(), R.color.vault_action_primary)
+                    binding.btnSave.setTextColor(
+                        androidx.core.content.ContextCompat.getColor(requireContext(), R.color.vault_on_primary_container)
+                    )
+                    binding.btnSave.strokeWidth = 0
+                } else {
+                    binding.btnSaveAndSync.isVisible = true
+                    binding.btnSave.isVisible = true
+                }
             }
+        }
+    }
+
+    private fun extractFormData(): CredentialFormData? {
+        val form = activeFormView
+        if (form == null) {
+            binding.tilCredentialType.error = getString(R.string.error_field_required)
+            return null
+        }
+        binding.tilCredentialType.error = null
+
+        return when (form) {
+            is CardFormView  -> if (form.validate()) form.getFormData() else null
+            is LoginFormView -> if (form.validate()) form.getFormData() else null
+            else             -> null
         }
     }
 
     private fun setupSaveButton() {
         binding.btnSaveAndSync.setOnClickListener {
-            // No-op for now as requested
+            val formData = extractFormData() ?: return@setOnClickListener
+            viewModel.saveAndSyncCredential(
+                data = formData,
+                editId = if (isEditMode) editCredentialId else null
+            )
         }
 
         binding.btnSave.setOnClickListener {
-            val form = activeFormView
-            if (form == null) {
-                binding.tilCredentialType.error = getString(R.string.error_field_required)
-                return@setOnClickListener
-            }
-            binding.tilCredentialType.error = null
-
-            val formData: CredentialFormData = when (form) {
-                is CardFormView  -> { if (!form.validate()) return@setOnClickListener; form.getFormData() }
-                is LoginFormView -> { if (!form.validate()) return@setOnClickListener; form.getFormData() }
-                else             -> return@setOnClickListener
-            }
-
+            val formData = extractFormData() ?: return@setOnClickListener
             if (isEditMode) {
                 viewModel.updateCredential(editCredentialId, formData)
             } else {
@@ -155,17 +177,21 @@ class AddCredentialBottomSheet : BottomSheetDialogFragment() {
                     binding.btnSave.isEnabled = true
                     binding.btnSaveAndSync.isEnabled = true
                     binding.btnSave.text = getString(R.string.btn_save)
+                    binding.btnSaveAndSync.text = getString(R.string.btn_save_sync)
                 }
                 is HomeViewModel.SaveState.Saving -> {
                     binding.btnSave.isEnabled = false
                     binding.btnSaveAndSync.isEnabled = false
                     binding.btnSave.text = getString(R.string.btn_saving)
+                    binding.btnSaveAndSync.text = getString(R.string.btn_saving)
                 }
                 is HomeViewModel.SaveState.Success -> dismiss()
                 is HomeViewModel.SaveState.Error -> {
                     binding.btnSave.isEnabled = true
                     binding.btnSaveAndSync.isEnabled = true
                     binding.btnSave.text = getString(R.string.btn_save)
+                    binding.btnSaveAndSync.text = getString(R.string.btn_save_sync)
+                    Toast.makeText(requireContext(), state.message, Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -182,8 +208,10 @@ class AddCredentialBottomSheet : BottomSheetDialogFragment() {
         binding.formContainer.addView(newForm)
         activeFormView = newForm
 
-        binding.btnSaveAndSync.isVisible = true
-        binding.btnSave.isVisible = true
+        if (!isEditMode) {
+            binding.btnSaveAndSync.isVisible = true
+            binding.btnSave.isVisible = true
+        }
     }
 
     // ── Companion ──────────────────────────────────────────────────────────────

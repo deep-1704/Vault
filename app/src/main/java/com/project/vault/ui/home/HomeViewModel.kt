@@ -60,10 +60,18 @@ class HomeViewModel @Inject constructor(
     fun loadCredentialDetail(credentialId: Int) {
         _selectedCredentialDetail.value = DetailState.Loading
         viewModelScope.launch {
-            runCatching { repository.getCredentialDetail(credentialId) }
-                .onSuccess { detail ->
-                    if (detail != null) {
-                        _selectedCredentialDetail.postValue(DetailState.Success(credentialId, detail))
+            runCatching {
+                val entity = repository.getEntityById(credentialId)
+                val detail = repository.getCredentialDetail(credentialId)
+                if (entity != null && detail != null) {
+                    DetailState.Success(credentialId, detail, isSynced = entity.isSynced)
+                } else {
+                    null
+                }
+            }
+                .onSuccess { state ->
+                    if (state != null) {
+                        _selectedCredentialDetail.postValue(state)
                     } else {
                         _selectedCredentialDetail.postValue(DetailState.Error("Credential not found"))
                     }
@@ -156,14 +164,62 @@ class HomeViewModel @Inject constructor(
 
     /**
      * Updates an existing credential record in Room via [CredentialRepository].
+     * If the credential was already synced and the user is logged in, it triggers a server sync.
+     * If the sync fails or the user is not logged in, local changes remain saved, and a sync error is reported.
      */
     fun updateCredential(id: Int, data: CredentialFormData) {
         if (_saveState.value is SaveState.Saving) return
         _saveState.value = SaveState.Saving
         viewModelScope.launch {
-            runCatching { repository.updateCredential(id, data) }
+            runCatching {
+                val existing = repository.getEntityById(id)
+                val wasSynced = existing?.isSynced == true
+                repository.updateCredential(id, data)
+
+                if (wasSynced) {
+                    if (authRepository.isLoggedIn.value == true) {
+                        runCatching {
+                            syncRepository.syncCredential(id)
+                        }.onFailure { syncEx ->
+                            _syncState.postValue(SyncState.Error(syncEx.message ?: "Sync failed on edit"))
+                        }
+                    } else {
+                        _syncState.postValue(SyncState.Error("You are logged out. Edits saved locally but not synced."))
+                    }
+                }
+            }
                 .onSuccess  { _saveState.postValue(SaveState.Success) }
                 .onFailure  { e -> _saveState.postValue(SaveState.Error(e.message ?: "Update failed")) }
+        }
+    }
+
+    /**
+     * Encrypts and saves or updates [data] in Room, and immediately syncs it to all registered devices.
+     * If [editId] is provided and not -1, it updates the existing entry before syncing; otherwise it inserts a new entry.
+     */
+    fun saveAndSyncCredential(data: CredentialFormData, editId: Int? = null) {
+        if (_saveState.value is SaveState.Saving) return
+
+        if (authRepository.isLoggedIn.value != true) {
+            _saveState.value = SaveState.Error("You must be logged in to sync")
+            return
+        }
+
+        _saveState.value = SaveState.Saving
+        viewModelScope.launch {
+            runCatching {
+                val credentialId = if (editId != null && editId != -1) {
+                    repository.updateCredential(editId, data)
+                    editId
+                } else {
+                    repository.saveCredential(data)
+                }
+                syncRepository.syncCredential(credentialId)
+            }.onSuccess {
+                _saveState.postValue(SaveState.Success)
+            }.onFailure { e ->
+                _saveState.postValue(SaveState.Error(e.message ?: "Save & Sync failed"))
+            }
         }
     }
 
@@ -279,7 +335,7 @@ class HomeViewModel @Inject constructor(
     sealed class DetailState {
         object Idle    : DetailState()
         object Loading : DetailState()
-        data class Success(val id: Int, val data: CredentialFormData) : DetailState()
+        data class Success(val id: Int, val data: CredentialFormData, val isSynced: Boolean = false) : DetailState()
         data class Error(val message: String) : DetailState()
     }
 
@@ -297,13 +353,14 @@ class HomeViewModel @Inject constructor(
     // ── Mapping helpers ───────────────────────────────────────────────────────
 
     private fun CredentialEntity.toUiModel() = Credential(
-        id     = id,
-        title  = title,
-        status = when {
+        id           = id,
+        title        = title,
+        status       = when {
             isShared -> CredentialStatus.SHARED
             isSynced -> CredentialStatus.SYNCED
             else     -> CredentialStatus.OFFLINE
-        }
+        },
+        lastSyncedAt = lastSyncedAt
     )
 }
 

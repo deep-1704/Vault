@@ -89,7 +89,8 @@ class SyncRepository @Inject constructor(
         dao.update(
             entity.copy(
                 serverId = syncResult.id.toString(),
-                isSynced = true
+                isSynced = true,
+                lastSyncedAt = System.currentTimeMillis()
             )
         )
     }
@@ -137,42 +138,66 @@ class SyncRepository @Inject constructor(
         }
         val serverItems = fetchResponse.body() ?: emptyList()
 
-        // 2. Import any server credentials not present locally
+        // 2. Process all server items: update existing local records or insert new ones
         var newImported = 0
+        var resynced    = 0
+        var failed      = 0
+
+        val processedServerIds = mutableSetOf<String>()
+
         for (item in serverItems) {
             val serverIdStr = item.credentialId.toString()
+            processedServerIds.add(serverIdStr)
+
             val currentEntities = dao.getAllSync()
-            val alreadyExists = currentEntities.any { it.serverId == serverIdStr }
-            if (!alreadyExists) {
-                runCatching {
-                    val plaintextJson = crypto.decrypt(item.content)
-                    val mapType = object : TypeToken<Map<String, String>>() {}.type
-                    val map: Map<String, String> = gson.fromJson(plaintextJson, mapType) ?: emptyMap()
-                    val title    = map["title"]?.takeIf { it.isNotBlank() } ?: "Untitled"
-                    val credType = map["credType"]?.takeIf { it.isNotBlank() } ?: "LOGIN"
+            val existingEntity = currentEntities.find { it.serverId == serverIdStr }
+
+            runCatching {
+                val plaintextJson = crypto.decrypt(item.content)
+                val mapType = object : TypeToken<Map<String, String>>() {}.type
+                val map: Map<String, String> = gson.fromJson(plaintextJson, mapType) ?: emptyMap()
+                val title    = map["title"]?.takeIf { it.isNotBlank() } ?: existingEntity?.title ?: "Untitled"
+                val credType = map["credType"]?.takeIf { it.isNotBlank() } ?: existingEntity?.credType ?: "LOGIN"
+                val encContent = crypto.encrypt(plaintextJson)
+
+                if (existingEntity == null) {
+                    // New item from server — insert into Room
                     dao.insert(
                         CredentialEntity(
                             title          = title,
                             credType       = credType,
-                            encJsonContent = crypto.encrypt(plaintextJson),
+                            encJsonContent = encContent,
                             serverId       = serverIdStr,
-                            isSynced       = true
+                            isSynced       = true,
+                            lastSyncedAt   = System.currentTimeMillis()
                         )
                     )
-                }.onSuccess {
                     newImported++
-                    android.util.Log.d("SyncRepository", "Successfully imported server credential #$serverIdStr")
-                }.onFailure { e ->
-                    android.util.Log.e("SyncRepository", "Failed to import server credential #$serverIdStr", e)
+                    android.util.Log.d("SyncRepository", "Successfully imported new server credential #$serverIdStr")
+                } else {
+                    // Existing item — update with latest server content
+                    dao.update(
+                        existingEntity.copy(
+                            title          = title,
+                            credType       = credType,
+                            encJsonContent = encContent,
+                            isSynced       = true,
+                            lastSyncedAt   = System.currentTimeMillis()
+                        )
+                    )
+                    resynced++
+                    android.util.Log.d("SyncRepository", "Successfully updated existing credential #$serverIdStr with server version")
                 }
+            }.onFailure { e ->
+                failed++
+                android.util.Log.e("SyncRepository", "Failed to process server credential #$serverIdStr", e)
             }
         }
 
-        // 3. Re-sync all local credentials that were already synced prior to this refresh
-        var resynced = 0
-        var failed   = 0
-        val preSyncedEntities = initialEntities.filter { it.isSynced }
-        for (entity in preSyncedEntities) {
+        // 3. For any local credentials marked isSynced = true that were NOT present on the server for this device,
+        // re-push them to the server.
+        val localOnlySyncedEntities = initialEntities.filter { it.isSynced && it.serverId !in processedServerIds }
+        for (entity in localOnlySyncedEntities) {
             runCatching { syncCredential(entity.id) }
                 .onSuccess { resynced++ }
                 .onFailure { failed++ }
