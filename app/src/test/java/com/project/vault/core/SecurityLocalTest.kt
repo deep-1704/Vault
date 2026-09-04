@@ -156,3 +156,49 @@ class SecurityLocalTest {
         assertEquals(original, decoded)
     }
 }
+
+// ── BiometricAuthManager session-timing tests ─────────────────────────────────
+// These replicate the isSessionValid() logic from BiometricAuthManager using
+// plain Long arithmetic — no Android framework dependency needed.
+
+private const val SESSION_MS = 10_000L // mirrors BiometricAuthManager.SESSION_DURATION_MS
+
+private fun isSessionValid(lastAuthTimestamp: Long, nowMs: Long): Boolean =
+    lastAuthTimestamp != 0L && (nowMs - lastAuthTimestamp) < SESSION_MS
+
+class BiometricSessionTest {
+
+    @Test
+    fun `session is valid when auth happened 5 seconds ago`() {
+        val now  = 100_000L
+        val last = now - 5_000L   // 5 s ago — within 10 s window
+        assertTrue("Session should be valid within 10 s", isSessionValid(last, now))
+    }
+
+    @Test
+    fun `session is expired when auth happened 11 seconds ago`() {
+        val now  = 100_000L
+        val last = now - 11_000L  // 11 s ago — past the 10 s window
+        assertTrue("Session should be expired after 10 s", !isSessionValid(last, now))
+    }
+
+    @Test
+    fun `session is invalid when auth has never occurred`() {
+        val last = 0L             // default — no auth yet
+        assertTrue("Uninitialized timestamp should be treated as expired", !isSessionValid(last, 50_000L))
+    }
+
+    @Test
+    fun `session expires exactly at the boundary`() {
+        val now  = 100_000L
+        val last = now - SESSION_MS   // exactly 10 s ago — not strictly less than, so expired
+        assertTrue("Session at exactly 10 s should be expired", !isSessionValid(last, now))
+    }
+
+    @Test
+    fun `session is valid immediately after auth`() {
+        val now  = 100_000L
+        val last = now             // auth just happened (0 ms ago)
+        assertTrue("Session should be valid immediately after auth", isSessionValid(last, now))
+    }
+}
