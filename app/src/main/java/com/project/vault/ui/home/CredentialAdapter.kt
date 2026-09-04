@@ -89,6 +89,33 @@ class CredentialAdapter(
 
         private val dateFormat = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
 
+        init {
+            val ctx = binding.root.context
+            // Synced chip
+            binding.chipSynced.text = ctx.getString(R.string.status_synced)
+            binding.chipSynced.chipBackgroundColor = ctx.getColorStateList(R.color.vault_status_synced_bg)
+            binding.chipSynced.setTextColor(ctx.getColor(R.color.vault_secondary))
+            binding.chipSynced.chipIcon = ctx.getDrawable(R.drawable.ic_check)
+            binding.chipSynced.chipIconTint = null
+            binding.chipSynced.isChipIconVisible = true
+
+            // Shared chip
+            binding.chipShared.text = ctx.getString(R.string.status_shared)
+            binding.chipShared.chipBackgroundColor = ctx.getColorStateList(R.color.vault_status_shared_bg)
+            binding.chipShared.setTextColor(ctx.getColor(R.color.vault_tertiary))
+            binding.chipShared.chipIcon = ctx.getDrawable(R.drawable.ic_shared)
+            binding.chipShared.chipIconTint = ctx.getColorStateList(R.color.vault_tertiary_fixed_dim)
+            binding.chipShared.isChipIconVisible = true
+
+            // Offline chip
+            binding.chipOffline.text = ctx.getString(R.string.status_offline)
+            binding.chipOffline.chipBackgroundColor = ctx.getColorStateList(R.color.vault_status_offline_bg)
+            binding.chipOffline.setTextColor(ctx.getColor(R.color.vault_on_surface_variant))
+            binding.chipOffline.chipIcon = ctx.getDrawable(R.drawable.ic_offline)
+            binding.chipOffline.chipIconTint = ctx.getColorStateList(R.color.vault_outline)
+            binding.chipOffline.isChipIconVisible = true
+        }
+
         fun bind(credential: Credential) {
             binding.tvCredentialTitle.text = credential.title
 
@@ -99,7 +126,7 @@ class CredentialAdapter(
                 binding.tvLastSynced.isVisible = false
             }
 
-            applyStatusChip(binding.chipStatus, credential.status)
+            bindChips(credential)
             bindButtonStates(credential)
 
             binding.root.setOnClickListener { onCardClick(credential) }
@@ -107,8 +134,26 @@ class CredentialAdapter(
             binding.btnShare.setOnClickListener { onShareClick(credential) }
         }
 
+        private fun bindChips(credential: Credential) {
+            val isSynced = credential.isSynced
+            val isShared = credential.isShared
+            val isOffline = !isSynced && !isShared
+
+            binding.chipSynced.isVisible = isSynced
+            binding.chipShared.isVisible = isShared
+            binding.chipOffline.isVisible = isOffline
+        }
+
         /** Refreshes only the Sync/Share button enabled/loading states. */
         fun bindButtonStates(credential: Credential) {
+            if (credential.isReceived) {
+                binding.btnSync.isVisible = false
+                binding.btnShare.isVisible = false
+                return
+            }
+            binding.btnSync.isVisible = true
+            binding.btnShare.isVisible = true
+
             val isSyncing  = syncLoadingIds.contains(credential.id)
             val isSharing  = shareLoadingIds.contains(credential.id)
 
@@ -124,39 +169,6 @@ class CredentialAdapter(
                 binding.root.context.getDrawable(R.drawable.ic_sync) else null
             binding.btnShare.icon = if (!isSharing)
                 binding.root.context.getDrawable(R.drawable.ic_share) else null
-        }
-
-        private fun applyStatusChip(chip: Chip, status: CredentialStatus) {
-            val ctx = chip.context
-            when (status) {
-                CredentialStatus.SYNCED -> {
-                    chip.text = ctx.getString(R.string.status_synced)
-                    chip.chipBackgroundColor =
-                        ctx.getColorStateList(R.color.vault_status_synced_bg)
-                    chip.setTextColor(ctx.getColor(R.color.vault_secondary))
-                    chip.chipIcon = ctx.getDrawable(R.drawable.ic_check)
-                    chip.chipIconTint = null
-                    chip.isChipIconVisible = true
-                }
-                CredentialStatus.SHARED -> {
-                    chip.text = ctx.getString(R.string.status_shared)
-                    chip.chipBackgroundColor =
-                        ctx.getColorStateList(R.color.vault_status_shared_bg)
-                    chip.setTextColor(ctx.getColor(R.color.vault_tertiary))
-                    chip.chipIcon = ctx.getDrawable(R.drawable.ic_shared)
-                    chip.chipIconTint = ctx.getColorStateList(R.color.vault_tertiary_fixed_dim)
-                    chip.isChipIconVisible = true
-                }
-                CredentialStatus.OFFLINE -> {
-                    chip.text = ctx.getString(R.string.status_offline)
-                    chip.chipBackgroundColor =
-                        ctx.getColorStateList(R.color.vault_status_offline_bg)
-                    chip.setTextColor(ctx.getColor(R.color.vault_on_surface_variant))
-                    chip.chipIcon = ctx.getDrawable(R.drawable.ic_offline)
-                    chip.chipIconTint = ctx.getColorStateList(R.color.vault_outline)
-                    chip.isChipIconVisible = true
-                }
-            }
         }
     }
 

@@ -34,6 +34,7 @@
     <string name="login_subtitle">Enter your credentials to enable cross device synchronization and sharing</string>
     <string name="hint_username">Username or Email</string>
     <string name="hint_password">Password</string>
+    <string name="error_auth_device_forbidden">Authentication failed: This device may already be registered to another account or access is forbidden.</string>
     <string name="btn_login">Login</string>
     <string name="btn_create_account">Create account</string>
     <string name="btn_signup">Signup</string>
@@ -104,5 +105,21 @@
     <string name="refresh_success">Synced %1$d · %2$d new imported</string>
     <string name="refresh_success_with_failures">Synced %1$d · %2$d new · %3$d failed</string>
     <string name="refresh_error">Refresh failed: %s</string>
+
+    <!-- Share Strings -->
+    <string name="share_credential_title">Share Credential</string>
+    <string name="share_credential_subtitle">Enter recipient\'s username</string>
+    <string name="hint_share_username">Recipient Username</string>
+    <string name="btn_send">Send</string>
+    <string name="btn_confirm">Confirm</string>
+    <string name="error_share_empty_username">Username cannot be empty</string>
+    <string name="error_share_self">You cannot share credentials with yourself</string>
+    <string name="error_share_user_not_found">User with username does not exist</string>
+    <string name="share_confirm_title">Confirm Share</string>
+    <string name="share_confirm_message">Are you sure you want to share \"%1$s\" to \"%2$s\"?</string>
+    <string name="biometric_share_subtitle">Authenticate to share \"%s\"</string>
+    <string name="sharing_credential">Sharing credential…</string>
+    <string name="share_success">Successfully shared \"%1$s\" with \"%2$s\"</string>
+    <string name="share_login_required">Please log in to share credentials</string>
 
 </resources>

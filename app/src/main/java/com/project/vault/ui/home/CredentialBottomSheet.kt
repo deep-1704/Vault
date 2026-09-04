@@ -119,6 +119,7 @@ class CredentialBottomSheet : BottomSheetDialogFragment() {
                 is HomeViewModel.DetailState.Success -> {
                     binding.progressBar.isVisible = false
                     isCredentialSynced = state.isSynced
+                    binding.btnEdit.isVisible = !state.isReceived
                     displayCredentialDetail(state.data)
                 }
                 is HomeViewModel.DetailState.Error -> {

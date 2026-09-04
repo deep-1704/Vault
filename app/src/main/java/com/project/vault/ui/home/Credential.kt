@@ -11,9 +11,18 @@ package com.project.vault.ui.home
 data class Credential(
     val id: Int,
     val title: String,
-    val status: CredentialStatus,
-    val lastSyncedAt: Long? = null
-)
+    val isSynced: Boolean = false,
+    val isShared: Boolean = false,
+    val lastSyncedAt: Long? = null,
+    val isReceived: Boolean = false
+) {
+    val status: CredentialStatus
+        get() = when {
+            isShared -> CredentialStatus.SHARED
+            isSynced -> CredentialStatus.SYNCED
+            else     -> CredentialStatus.OFFLINE
+        }
+}
 
 enum class CredentialStatus {
     SYNCED,

@@ -20,6 +20,9 @@ import javax.inject.Singleton
 sealed class AuthException(message: String) : Exception(message) {
     class UserAlreadyExistsException(message: String = "Username already exists") : AuthException(message)
     class InvalidCredentialsException(message: String = "Invalid username or password") : AuthException(message)
+    class DeviceRegistrationForbiddenException(
+        message: String = "Authentication failed: This device may already be registered to another account or access is forbidden."
+    ) : AuthException(message)
     class ApiException(message: String) : AuthException(message)
 }
 
@@ -68,6 +71,9 @@ class AuthRepository @Inject constructor(
                     authSessionManager.saveSession(username, password, deviceId)
                     Result.success(Unit)
                 }
+                response.code() == 403 -> {
+                    Result.failure(AuthException.DeviceRegistrationForbiddenException())
+                }
                 response.code() == 409 -> {
                     Result.failure(AuthException.UserAlreadyExistsException())
                 }
@@ -105,6 +111,9 @@ class AuthRepository @Inject constructor(
                 }
                 response.code() == 401 -> {
                     Result.failure(AuthException.InvalidCredentialsException())
+                }
+                response.code() == 403 -> {
+                    Result.failure(AuthException.DeviceRegistrationForbiddenException())
                 }
                 else -> {
                     val errorBody = response.errorBody()?.string()?.takeIf { it.isNotBlank() }

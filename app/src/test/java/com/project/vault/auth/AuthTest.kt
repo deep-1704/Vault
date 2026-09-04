@@ -57,5 +57,37 @@ class AuthTest {
         assertNotNull(header)
         assertTrue(header.startsWith("Basic "))
     }
+
+    @Test
+    fun testDeviceRegistrationForbiddenExceptionDefaultMessage() {
+        val ex = com.project.vault.repository.AuthException.DeviceRegistrationForbiddenException()
+        assertEquals(
+            "Authentication failed: This device may already be registered to another account or access is forbidden.",
+            ex.message
+        )
+        assertTrue(ex is com.project.vault.repository.AuthException)
+    }
+
+    @Test
+    fun testDeviceRegistrationForbiddenExceptionCustomMessage() {
+        val customMsg = "Custom forbidden error"
+        val ex = com.project.vault.repository.AuthException.DeviceRegistrationForbiddenException(customMsg)
+        assertEquals(customMsg, ex.message)
+    }
+
+    @Test
+    fun testAuthExceptionResolutionForDeviceForbidden() {
+        val ex: Throwable = com.project.vault.repository.AuthException.DeviceRegistrationForbiddenException()
+        val userFacingMessage = when (ex) {
+            is com.project.vault.repository.AuthException.InvalidCredentialsException -> ex.message ?: "Invalid username or password"
+            is com.project.vault.repository.AuthException.DeviceRegistrationForbiddenException -> ex.message ?: "Authentication failed: This device may already be registered to another account or access is forbidden."
+            is com.project.vault.repository.AuthException.ApiException -> ex.message ?: "Authentication failed"
+            else -> ex.localizedMessage ?: "Network error occurred"
+        }
+        assertEquals(
+            "Authentication failed: This device may already be registered to another account or access is forbidden.",
+            userFacingMessage
+        )
+    }
 }
 

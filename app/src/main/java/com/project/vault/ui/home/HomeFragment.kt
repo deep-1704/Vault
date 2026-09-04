@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -16,6 +17,7 @@ import com.project.vault.security.BiometricAuthManager
 import com.project.vault.ui.auth.LoginFragment
 import com.project.vault.ui.base.BaseFragment
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
@@ -37,11 +39,13 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
 
     private val viewModel: HomeViewModel by viewModels()
 
+    private var shareLoadingDialog: androidx.appcompat.app.AlertDialog? = null
+
     private val adapter by lazy {
         CredentialAdapter(
             onCardClick  = { credential -> onCredentialClicked(credential) },
             onSyncClick  = { credential -> onSyncClicked(credential) },
-            onShareClick = { credential -> viewModel.onShareClicked(credential.id) }
+            onShareClick = { credential -> onShareClicked(credential) }
         )
     }
 
@@ -231,6 +235,40 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
                 }
             }
         }
+
+        // Observe credential sharing operation state
+        viewModel.shareExecutionState.observe(viewLifecycleOwner) { state ->
+            when (state) {
+                is HomeViewModel.ShareExecutionState.Idle -> {
+                    shareLoadingDialog?.dismiss()
+                    shareLoadingDialog = null
+                }
+                is HomeViewModel.ShareExecutionState.Loading -> {
+                    if (shareLoadingDialog == null) {
+                        shareLoadingDialog = MaterialAlertDialogBuilder(requireContext())
+                            .setView(R.layout.dialog_loading_share)
+                            .setCancelable(false)
+                            .show()
+                    }
+                }
+                is HomeViewModel.ShareExecutionState.Success -> {
+                    shareLoadingDialog?.dismiss()
+                    shareLoadingDialog = null
+                    Snackbar.make(
+                        binding.root,
+                        getString(R.string.share_success, state.credentialTitle, state.recipientUsername),
+                        Snackbar.LENGTH_LONG
+                    ).show()
+                    viewModel.resetShareExecutionState()
+                }
+                is HomeViewModel.ShareExecutionState.Error -> {
+                    shareLoadingDialog?.dismiss()
+                    shareLoadingDialog = null
+                    Snackbar.make(binding.root, state.message, Snackbar.LENGTH_LONG).show()
+                    viewModel.resetShareExecutionState()
+                }
+            }
+        }
     }
 
     // ── Biometric & Bottom Sheet ─────────────────────────────────────────
@@ -330,5 +368,130 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
                 showToast(getString(R.string.biometric_not_available))
             }
         }
+    }
+
+    // ── Share Flow ───────────────────────────────────────────────────────
+
+    private fun onShareClicked(credential: Credential) {
+        if (viewModel.isLoggedIn.value != true) {
+            Snackbar.make(binding.root, R.string.share_login_required, Snackbar.LENGTH_LONG).show()
+            return
+        }
+        showShareInputDialog(credential)
+    }
+
+    private fun showShareInputDialog(credential: Credential, prefillUsername: String = "") {
+        val dialogBinding = com.project.vault.databinding.DialogShareCredentialBinding.inflate(layoutInflater)
+        dialogBinding.tvShareSubtitle.text = getString(R.string.share_credential_subtitle) + " for \"${credential.title}\""
+        if (prefillUsername.isNotEmpty()) {
+            dialogBinding.etShareUsername.setText(prefillUsername)
+            dialogBinding.etShareUsername.setSelection(prefillUsername.length)
+        }
+
+        val dialog = MaterialAlertDialogBuilder(requireContext())
+            .setView(dialogBinding.root)
+            .setCancelable(true)
+            .create()
+
+        dialogBinding.btnCancelShare.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialogBinding.btnSendShare.setOnClickListener {
+            val rawUsername = dialogBinding.etShareUsername.text?.toString()?.trim().orEmpty()
+            if (rawUsername.isBlank()) {
+                dialogBinding.inputLayoutShareUsername.error = getString(R.string.error_share_empty_username)
+                return@setOnClickListener
+            }
+            val currentUsername = viewModel.currentUsername.value
+            if (!currentUsername.isNullOrBlank() && rawUsername.equals(currentUsername, ignoreCase = true)) {
+                dialogBinding.inputLayoutShareUsername.error = getString(R.string.error_share_self)
+                return@setOnClickListener
+            }
+            dialogBinding.inputLayoutShareUsername.error = null
+
+            // Disable send button and show progress spinner inside button replacing send text
+            dialogBinding.btnSendShare.isEnabled = false
+            dialogBinding.btnSendShare.text = ""
+            dialogBinding.progressShareSend.visibility = View.VISIBLE
+            dialogBinding.btnCancelShare.isEnabled = false
+            dialogBinding.etShareUsername.isEnabled = false
+
+            viewLifecycleOwner.lifecycleScope.launch {
+                val result = viewModel.fetchDevicesForUser(rawUsername)
+                if (!isAdded) return@launch
+
+                val devices = result.getOrNull()
+                if (devices.isNullOrEmpty()) {
+                    dialogBinding.btnSendShare.isEnabled = true
+                    dialogBinding.btnSendShare.text = getString(R.string.btn_send)
+                    dialogBinding.progressShareSend.visibility = View.GONE
+                    dialogBinding.btnCancelShare.isEnabled = true
+                    dialogBinding.etShareUsername.isEnabled = true
+                    dialogBinding.inputLayoutShareUsername.error = getString(R.string.error_share_user_not_found)
+                } else {
+                    dialog.dismiss()
+                    showShareConfirmationDialog(credential, rawUsername, devices)
+                }
+            }
+        }
+
+        dialog.show()
+    }
+
+    private fun showShareConfirmationDialog(
+        credential: Credential,
+        recipientUsername: String,
+        devices: List<com.project.vault.api.dto.DeviceDto>
+    ) {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.share_confirm_title)
+            .setMessage(getString(R.string.share_confirm_message, credential.title, recipientUsername))
+            .setNegativeButton(R.string.btn_cancel) { _, _ ->
+                showShareInputDialog(credential, prefillUsername = recipientUsername)
+            }
+            .setPositiveButton(R.string.btn_confirm) { _, _ ->
+                authenticateAndExecuteShare(credential, recipientUsername, devices)
+            }
+            .setOnCancelListener {
+                showShareInputDialog(credential, prefillUsername = recipientUsername)
+            }
+            .show()
+    }
+
+    private fun authenticateAndExecuteShare(
+        credential: Credential,
+        recipientUsername: String,
+        devices: List<com.project.vault.api.dto.DeviceDto>
+    ) {
+        when (biometricAuthManager.canAuthenticate(requireContext())) {
+            BiometricAuthManager.BiometricStatus.Ready -> {
+                biometricAuthManager.authenticate(
+                    fragment = this,
+                    title = getString(R.string.biometric_prompt_title),
+                    subtitle = getString(R.string.biometric_share_subtitle, credential.title),
+                    onSuccess = {
+                        viewModel.executeShare(credential.id, credential.title, recipientUsername, devices)
+                    },
+                    onError = { errorMsg ->
+                        showToast(errorMsg)
+                        showShareInputDialog(credential, prefillUsername = recipientUsername)
+                    }
+                )
+            }
+            BiometricAuthManager.BiometricStatus.NoneEnrolled -> {
+                showUnenrolledDialog()
+            }
+            BiometricAuthManager.BiometricStatus.HardwareUnavailable,
+            BiometricAuthManager.BiometricStatus.Unsupported -> {
+                showToast(getString(R.string.biometric_not_available))
+            }
+        }
+    }
+
+    override fun onDestroyView() {
+        shareLoadingDialog?.dismiss()
+        shareLoadingDialog = null
+        super.onDestroyView()
     }
 }

@@ -117,6 +117,23 @@ class SyncRepository @Inject constructor(
     }
 
     /**
+     * Revokes access to a shared credential on the server for [deviceId].
+     *
+     * @throws IllegalStateException if the user is not logged in.
+     * @throws Exception on network / server error.
+     */
+    suspend fun revokeSharedCredential(sharedCredId: Long, deviceId: String) {
+        if (!session.hasValidSession()) {
+            throw IllegalStateException("You must be logged in to revoke shared credential")
+        }
+        val response = apiService.deleteSharedCredential(sharedCredId, deviceId)
+        if (!response.isSuccessful && response.code() != 404) {
+            val code = response.code()
+            throw Exception("Failed to revoke shared credential on server (HTTP $code)")
+        }
+    }
+
+    /**
      * Result of a global refresh operation.
      *
      * @param newImported Number of credentials pulled from the server and saved locally.
@@ -152,14 +169,20 @@ class SyncRepository @Inject constructor(
 
         val initialEntities = dao.getAllSync()
 
-        // 1. Fetch all synced items from the server for this device
+        // 1. Fetch all synced items and shared items from the server for this device
         val fetchResponse = apiService.getSyncedItems(deviceId)
         if (!fetchResponse.isSuccessful) {
             throw Exception("Failed to fetch synced items (HTTP ${fetchResponse.code()})")
         }
         val serverItems = fetchResponse.body() ?: emptyList()
 
-        // 2. Process all server items: update existing local records or insert new ones
+        val shareResponse = apiService.getSharedItems(deviceId)
+        if (!shareResponse.isSuccessful) {
+            throw Exception("Failed to fetch shared items (HTTP ${shareResponse.code()})")
+        }
+        val sharedItems = shareResponse.body() ?: emptyList()
+
+        // 2. Process all server synced items: update existing local records or insert new ones
         var newImported = 0
         var resynced    = 0
         var failed      = 0
@@ -171,7 +194,7 @@ class SyncRepository @Inject constructor(
             processedServerIds.add(serverIdStr)
 
             val currentEntities = dao.getAllSync()
-            val existingEntity = currentEntities.find { it.serverId == serverIdStr }
+            val existingEntity = currentEntities.find { !it.isReceived && it.serverId == serverIdStr }
 
             runCatching {
                 val plaintextJson = crypto.decrypt(item.content)
@@ -215,19 +238,70 @@ class SyncRepository @Inject constructor(
             }
         }
 
-        // 3. For any local credentials previously synced with a serverId that are no longer
+        // 3. Process shared items destined for this device
+        val processedShareIds = mutableSetOf<String>()
+
+        for (item in sharedItems) {
+            val shareIdStr = item.sharedCredId.toString()
+            processedShareIds.add(shareIdStr)
+
+            val currentEntities = dao.getAllSync()
+            val existingEntity = currentEntities.find { it.isReceived && it.serverShareId == shareIdStr }
+
+            if (existingEntity == null) {
+                runCatching {
+                    val plaintextJson = crypto.decrypt(item.content)
+                    val mapType = object : TypeToken<Map<String, String>>() {}.type
+                    val map: Map<String, String> = gson.fromJson(plaintextJson, mapType) ?: emptyMap()
+                    val title    = map["title"]?.takeIf { it.isNotBlank() } ?: "Untitled"
+                    val credType = map["credType"]?.takeIf { it.isNotBlank() } ?: "LOGIN"
+                    val encContent = crypto.encrypt(plaintextJson)
+
+                    dao.insert(
+                        CredentialEntity(
+                            title          = title,
+                            credType       = credType,
+                            encJsonContent = encContent,
+                            serverShareId  = shareIdStr,
+                            isShared       = true,
+                            isReceived     = true,
+                            isSynced       = false,
+                            lastSyncedAt   = System.currentTimeMillis()
+                        )
+                    )
+                    newImported++
+                    android.util.Log.d("SyncRepository", "Successfully imported new shared credential #$shareIdStr")
+                }.onFailure { e ->
+                    failed++
+                    android.util.Log.e("SyncRepository", "Failed to process shared credential #$shareIdStr", e)
+                }
+            } else {
+                // Shared item already exists locally — as per requirements, ignore update for receiving user for now.
+            }
+        }
+
+        // 4. Prune revoked shared items: delete local received credentials no longer on server
+        for (entity in initialEntities) {
+            val sShareId = entity.serverShareId
+            if (entity.isReceived && sShareId != null && sShareId !in processedShareIds) {
+                dao.deleteById(entity.id)
+                android.util.Log.d("SyncRepository", "Deleted revoked shared credential #${entity.id} with serverShareId $sShareId")
+            }
+        }
+
+        // 5. For any local credentials previously synced with a serverId that are no longer
         // on the server, delete them locally to reflect server-side deletions.
         for (entity in initialEntities) {
             val sId = entity.serverId
-            if (entity.isSynced && sId != null && sId !in processedServerIds) {
+            if (entity.isSynced && !entity.isReceived && sId != null && sId !in processedServerIds) {
                 dao.deleteById(entity.id)
                 android.util.Log.d("SyncRepository", "Deleted local credential #${entity.id} because serverId $sId was removed on server")
             }
         }
 
-        // 4. For any local credentials marked isSynced = true that were never uploaded (serverId == null),
+        // 6. For any local credentials marked isSynced = true that were never uploaded (serverId == null),
         // push them to the server.
-        val unuploadedSyncedEntities = initialEntities.filter { it.isSynced && it.serverId == null }
+        val unuploadedSyncedEntities = initialEntities.filter { it.isSynced && !it.isReceived && it.serverId == null }
         for (entity in unuploadedSyncedEntities) {
             runCatching { syncCredential(entity.id) }
                 .onSuccess { resynced++ }

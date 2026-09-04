@@ -41,6 +41,12 @@ data class CredentialEntity(
     @ColumnInfo(name = "cred_type")
     val credType: String,
 
+    @ColumnInfo(name = "server_share_id")
+    val serverShareId: String? = null,
+
+    @ColumnInfo(name = "is_received")
+    val isReceived: Boolean = false,
+
     @ColumnInfo(name = "enc_json_content")
     val encJsonContent: String
 )

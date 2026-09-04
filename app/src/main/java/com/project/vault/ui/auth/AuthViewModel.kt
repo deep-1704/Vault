@@ -41,6 +41,7 @@ class AuthViewModel @Inject constructor(
                 onFailure = { error ->
                     val message = when (error) {
                         is AuthException.InvalidCredentialsException -> error.message ?: "Invalid username or password"
+                        is AuthException.DeviceRegistrationForbiddenException -> error.message ?: "Authentication failed: This device may already be registered to another account or access is forbidden."
                         is AuthException.ApiException -> error.message ?: "Authentication failed"
                         else -> error.localizedMessage ?: "Network error occurred"
                     }
@@ -66,6 +67,7 @@ class AuthViewModel @Inject constructor(
                 onFailure = { error ->
                     val message = when (error) {
                         is AuthException.UserAlreadyExistsException -> error.message ?: "Username already exists"
+                        is AuthException.DeviceRegistrationForbiddenException -> error.message ?: "Authentication failed: This device may already be registered to another account or access is forbidden."
                         is AuthException.ApiException -> error.message ?: "Sign up failed"
                         else -> error.localizedMessage ?: "Network error occurred"
                     }

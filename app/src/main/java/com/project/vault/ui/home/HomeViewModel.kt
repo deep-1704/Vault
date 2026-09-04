@@ -31,6 +31,7 @@ import javax.inject.Inject
 class HomeViewModel @Inject constructor(
     private val repository: CredentialRepository,
     private val syncRepository: SyncRepository,
+    private val shareRepository: com.project.vault.repository.ShareRepository,
     private val authRepository: com.project.vault.repository.AuthRepository
 ) : BaseViewModel() {
 
@@ -64,7 +65,7 @@ class HomeViewModel @Inject constructor(
                 val entity = repository.getEntityById(credentialId)
                 val detail = repository.getCredentialDetail(credentialId)
                 if (entity != null && detail != null) {
-                    DetailState.Success(credentialId, detail, isSynced = entity.isSynced)
+                    DetailState.Success(credentialId, detail, isSynced = entity.isSynced, isReceived = entity.isReceived)
                 } else {
                     null
                 }
@@ -145,6 +146,53 @@ class HomeViewModel @Inject constructor(
         _refreshResultState.value = RefreshResultState.Idle
     }
 
+    // ── Share state ───────────────────────────────────────────────────────────
+
+    private val _shareExecutionState = MutableLiveData<ShareExecutionState>(ShareExecutionState.Idle)
+
+    /**
+     * Observed by [HomeFragment] to drive the loading dialog and Snackbars for credential sharing.
+     */
+    val shareExecutionState: LiveData<ShareExecutionState> = _shareExecutionState
+
+    fun resetShareExecutionState() {
+        _shareExecutionState.value = ShareExecutionState.Idle
+    }
+
+    /**
+     * Fetches registered devices for a target user.
+     */
+    suspend fun fetchDevicesForUser(username: String): Result<List<com.project.vault.api.dto.DeviceDto>> {
+        return runCatching {
+            shareRepository.getDevicesByUsername(username)
+        }
+    }
+
+    /**
+     * Executes the share operation for [credentialId] to [recipientUsername] with the given [devices].
+     */
+    fun executeShare(
+        credentialId: Int,
+        credentialTitle: String,
+        recipientUsername: String,
+        devices: List<com.project.vault.api.dto.DeviceDto>
+    ) {
+        if (_shareExecutionState.value is ShareExecutionState.Loading) return
+        _shareExecutionState.value = ShareExecutionState.Loading
+        viewModelScope.launch {
+            runCatching {
+                shareRepository.shareCredential(credentialId, recipientUsername, devices)
+            }.onSuccess {
+                _shareExecutionState.postValue(
+                    ShareExecutionState.Success(credentialTitle, recipientUsername)
+                )
+            }.onFailure { e ->
+                _shareExecutionState.postValue(
+                    ShareExecutionState.Error(e.message ?: "Failed to share credential")
+                )
+            }
+        }
+    }
 
     // ── Actions ───────────────────────────────────────────────────────────────
 
@@ -245,9 +293,16 @@ class HomeViewModel @Inject constructor(
             runCatching {
                 val entity = repository.getEntityById(id)
                 val serverCredId = entity?.serverId?.toLongOrNull()
+                val serverShareId = entity?.serverShareId?.toLongOrNull()
                 val isSynced = entity?.isSynced == true
+                val isReceived = entity?.isReceived == true
 
-                if (isSynced && serverCredId != null) {
+                if (isReceived && serverShareId != null) {
+                    if (authRepository.isLoggedIn.value == true) {
+                        val deviceId = authRepository.getDeviceId()
+                        syncRepository.revokeSharedCredential(serverShareId, deviceId)
+                    }
+                } else if (isSynced && serverCredId != null) {
                     if (authRepository.isLoggedIn.value == true) {
                         syncRepository.deleteSyncedCredential(serverCredId)
                     }
@@ -372,7 +427,12 @@ class HomeViewModel @Inject constructor(
     sealed class DetailState {
         object Idle    : DetailState()
         object Loading : DetailState()
-        data class Success(val id: Int, val data: CredentialFormData, val isSynced: Boolean = false) : DetailState()
+        data class Success(
+            val id: Int,
+            val data: CredentialFormData,
+            val isSynced: Boolean = false,
+            val isReceived: Boolean = false
+        ) : DetailState()
         data class Error(val message: String) : DetailState()
     }
 
@@ -387,17 +447,22 @@ class HomeViewModel @Inject constructor(
         data class Error(val message: String) : RefreshResultState()
     }
 
+    sealed class ShareExecutionState {
+        object Idle : ShareExecutionState()
+        object Loading : ShareExecutionState()
+        data class Success(val credentialTitle: String, val recipientUsername: String) : ShareExecutionState()
+        data class Error(val message: String) : ShareExecutionState()
+    }
+
     // ── Mapping helpers ───────────────────────────────────────────────────────
 
     private fun CredentialEntity.toUiModel() = Credential(
         id           = id,
         title        = title,
-        status       = when {
-            isShared -> CredentialStatus.SHARED
-            isSynced -> CredentialStatus.SYNCED
-            else     -> CredentialStatus.OFFLINE
-        },
-        lastSyncedAt = lastSyncedAt
+        isSynced     = isSynced,
+        isShared     = isShared,
+        lastSyncedAt = lastSyncedAt,
+        isReceived   = isReceived
     )
 }
 
