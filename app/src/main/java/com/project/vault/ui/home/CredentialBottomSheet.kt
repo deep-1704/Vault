@@ -40,6 +40,7 @@ class CredentialBottomSheet : BottomSheetDialogFragment() {
     )
 
     private var credentialId: Int = -1
+    private var isCredentialSynced: Boolean = false
 
     override fun getTheme(): Int = R.style.Theme_Vault_BottomSheet
 
@@ -86,9 +87,15 @@ class CredentialBottomSheet : BottomSheetDialogFragment() {
     }
 
     private fun showDeleteConfirmation() {
+        val messageRes = if (isCredentialSynced) {
+            R.string.delete_credential_synced_message
+        } else {
+            R.string.delete_credential_message
+        }
+
         MaterialAlertDialogBuilder(requireContext())
             .setTitle(R.string.delete_credential_title)
-            .setMessage(R.string.delete_credential_message)
+            .setMessage(messageRes)
             .setPositiveButton(R.string.action_delete) { _, _ ->
                 if (credentialId != -1) {
                     viewModel.deleteCredential(credentialId)
@@ -111,6 +118,7 @@ class CredentialBottomSheet : BottomSheetDialogFragment() {
                 }
                 is HomeViewModel.DetailState.Success -> {
                     binding.progressBar.isVisible = false
+                    isCredentialSynced = state.isSynced
                     displayCredentialDetail(state.data)
                 }
                 is HomeViewModel.DetailState.Error -> {

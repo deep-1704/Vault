@@ -80,6 +80,10 @@ class SyncRepository @Inject constructor(
         val syncResponse = apiService.syncCredential(syncItems)
         if (!syncResponse.isSuccessful) {
             val code = syncResponse.code()
+            if (code == 404) {
+                dao.deleteById(credentialId)
+                throw Exception("Credential is no longer present on the server and has been deleted locally")
+            }
             throw Exception("Sync failed (HTTP $code)")
         }
         val syncResult = syncResponse.body()
@@ -93,6 +97,23 @@ class SyncRepository @Inject constructor(
                 lastSyncedAt = System.currentTimeMillis()
             )
         )
+    }
+
+    /**
+     * Deletes a synced credential from the sync server across all user devices.
+     *
+     * @throws IllegalStateException if the user is not logged in.
+     * @throws Exception on network / server error.
+     */
+    suspend fun deleteSyncedCredential(serverCredId: Long) {
+        if (!session.hasValidSession()) {
+            throw IllegalStateException("You must be logged in to sync")
+        }
+        val response = apiService.deleteSyncedCredential(serverCredId)
+        if (!response.isSuccessful && response.code() != 404) {
+            val code = response.code()
+            throw Exception("Failed to delete credential from sync server (HTTP $code)")
+        }
     }
 
     /**
@@ -114,9 +135,9 @@ class SyncRepository @Inject constructor(
      *  1. Calls `GET /sync/{deviceId}` to fetch all server items for this device.
      *  2. For each server item, checks if a local credential with that [serverId] already
      *     exists in Room. If not, decrypts the server payload and inserts it as a new
-     *     [CredentialEntity] with [isSynced] = true.
-     *  3. Queries Room for all local credentials where [isSynced] = true and re-syncs
-     *     each one via [syncCredential].
+     *     [CredentialEntity] with [isSynced] = true. If it exists, updates it with the latest data.
+     *  3. For any local credentials previously synced that are no longer on the server,
+     *     removes them from Room to reflect server-side deletion.
      *  4. Returns a [RefreshResult] summarising how many were imported, re-synced, and failed.
      *
      * Individual credential failures are skipped gracefully — all others still complete.
@@ -194,10 +215,20 @@ class SyncRepository @Inject constructor(
             }
         }
 
-        // 3. For any local credentials marked isSynced = true that were NOT present on the server for this device,
-        // re-push them to the server.
-        val localOnlySyncedEntities = initialEntities.filter { it.isSynced && it.serverId !in processedServerIds }
-        for (entity in localOnlySyncedEntities) {
+        // 3. For any local credentials previously synced with a serverId that are no longer
+        // on the server, delete them locally to reflect server-side deletions.
+        for (entity in initialEntities) {
+            val sId = entity.serverId
+            if (entity.isSynced && sId != null && sId !in processedServerIds) {
+                dao.deleteById(entity.id)
+                android.util.Log.d("SyncRepository", "Deleted local credential #${entity.id} because serverId $sId was removed on server")
+            }
+        }
+
+        // 4. For any local credentials marked isSynced = true that were never uploaded (serverId == null),
+        // push them to the server.
+        val unuploadedSyncedEntities = initialEntities.filter { it.isSynced && it.serverId == null }
+        for (entity in unuploadedSyncedEntities) {
             runCatching { syncCredential(entity.id) }
                 .onSuccess { resynced++ }
                 .onFailure { failed++ }

@@ -8,6 +8,7 @@ import com.project.vault.api.dto.SyncItemResponse
 import com.project.vault.api.dto.SyncResponse
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
@@ -65,4 +66,14 @@ interface ApiService {
     suspend fun getSyncedItems(
         @Path("deviceId") deviceId: String
     ): Response<List<SyncItemResponse>>
+
+    /**
+     * Deletes a synced credential from the sync server across all user devices.
+     *
+     * @param credId The server-assigned credential ID.
+     */
+    @DELETE("sync/{credId}")
+    suspend fun deleteSyncedCredential(
+        @Path("credId") credId: Long
+    ): Response<Unit>
 }

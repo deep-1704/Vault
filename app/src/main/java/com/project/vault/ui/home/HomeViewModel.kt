@@ -223,12 +223,42 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    // ── Delete state ──────────────────────────────────────────────────────────
+
+    private val _deleteState = MutableLiveData<DeleteState>(DeleteState.Idle)
+    val deleteState: LiveData<DeleteState> = _deleteState
+
+    fun resetDeleteState() {
+        _deleteState.value = DeleteState.Idle
+    }
+
     /**
-     * Deletes a credential from Room by [id].
+     * Deletes a credential from Room by [id], and if it was synced,
+     * also deletes it from the sync server across all user devices.
+     * Updates [deleteState] to [DeleteState.Deleting], then [DeleteState.Success] or [DeleteState.Error].
      */
     fun deleteCredential(id: Int) {
-        launchSafe {
-            repository.deleteCredential(id)
+        if (_deleteState.value is DeleteState.Deleting) return
+        _deleteState.value = DeleteState.Deleting
+
+        viewModelScope.launch {
+            runCatching {
+                val entity = repository.getEntityById(id)
+                val serverCredId = entity?.serverId?.toLongOrNull()
+                val isSynced = entity?.isSynced == true
+
+                if (isSynced && serverCredId != null) {
+                    if (authRepository.isLoggedIn.value == true) {
+                        syncRepository.deleteSyncedCredential(serverCredId)
+                    }
+                }
+
+                repository.deleteCredential(id)
+            }.onSuccess {
+                _deleteState.postValue(DeleteState.Success)
+            }.onFailure { e ->
+                _deleteState.postValue(DeleteState.Error(e.message ?: "Failed to delete credential"))
+            }
         }
     }
 
@@ -320,6 +350,13 @@ class HomeViewModel @Inject constructor(
         object Saving  : SaveState()
         object Success : SaveState()
         data class Error(val message: String) : SaveState()
+    }
+
+    sealed class DeleteState {
+        object Idle     : DeleteState()
+        object Deleting : DeleteState()
+        object Success  : DeleteState()
+        data class Error(val message: String) : DeleteState()
     }
 
     /**

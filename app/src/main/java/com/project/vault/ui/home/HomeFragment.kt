@@ -206,7 +206,29 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
                     ).show()
                     viewModel.resetRefreshResultState()
                 }
-                else -> { /* Idle — no action */ }
+                is HomeViewModel.RefreshResultState.Idle -> Unit
+            }
+        }
+
+        // Observe delete operation loading state and results
+        viewModel.deleteState.observe(viewLifecycleOwner) { state ->
+            when (state) {
+                is HomeViewModel.DeleteState.Idle -> {
+                    binding.layoutDeleteLoading.isVisible = false
+                }
+                is HomeViewModel.DeleteState.Deleting -> {
+                    binding.layoutDeleteLoading.isVisible = true
+                }
+                is HomeViewModel.DeleteState.Success -> {
+                    binding.layoutDeleteLoading.isVisible = false
+                    Snackbar.make(binding.root, R.string.delete_credential_success, Snackbar.LENGTH_SHORT).show()
+                    viewModel.resetDeleteState()
+                }
+                is HomeViewModel.DeleteState.Error -> {
+                    binding.layoutDeleteLoading.isVisible = false
+                    Snackbar.make(binding.root, state.message, Snackbar.LENGTH_LONG).show()
+                    viewModel.resetDeleteState()
+                }
             }
         }
     }
