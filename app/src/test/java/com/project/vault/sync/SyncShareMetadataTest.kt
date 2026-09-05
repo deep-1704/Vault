@@ -120,8 +120,8 @@ class SyncShareMetadataTest {
         val existingServerId = "55"
         val existingServerShareId = "99"
 
-        if (existingServerId != null) baseFormMap["serverId"] = existingServerId
-        if (existingServerShareId != null) baseFormMap["serverShareId"] = existingServerShareId
+        baseFormMap["serverId"] = existingServerId
+        baseFormMap["serverShareId"] = existingServerShareId
 
         val json = gson.toJson(baseFormMap)
         val parsed: Map<String, String> = gson.fromJson(json, mapType)
@@ -129,5 +129,41 @@ class SyncShareMetadataTest {
         assertEquals("Updated Title", parsed["title"])
         assertEquals("55", parsed["serverId"])
         assertEquals("99", parsed["serverShareId"])
+    }
+
+    @Test
+    fun `test publishing shared update groups devices by owner`() {
+        val devices = listOf(
+            com.project.vault.api.dto.DeviceDto("dev-1", "bob", "key1"),
+            com.project.vault.api.dto.DeviceDto("dev-2", "bob", "key2"),
+            com.project.vault.api.dto.DeviceDto("dev-3", "charlie", "key3")
+        )
+        val grouped = devices.groupBy { it.owner }
+        assertEquals(2, grouped.size)
+        assertEquals(2, grouped["bob"]?.size)
+        assertEquals(1, grouped["charlie"]?.size)
+    }
+
+    @Test
+    fun `test RefreshResult includes updatedShared count`() {
+        val result = com.project.vault.repository.SyncRepository.RefreshResult(
+            newImported = 2,
+            resynced = 5,
+            updatedShared = 3,
+            failed = 0
+        )
+        assertEquals(2, result.newImported)
+        assertEquals(5, result.resynced)
+        assertEquals(3, result.updatedShared)
+        assertEquals(0, result.failed)
+    }
+
+    @Test
+    fun `test RefreshReceivedResult types`() {
+        val updated = com.project.vault.repository.SyncRepository.RefreshReceivedResult.Updated("My Card")
+        val revoked = com.project.vault.repository.SyncRepository.RefreshReceivedResult.Revoked("My Card")
+
+        assertEquals("My Card", updated.title)
+        assertEquals("My Card", revoked.title)
     }
 }

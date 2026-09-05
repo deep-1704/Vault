@@ -155,16 +155,97 @@ class SyncRepository @Inject constructor(
         }
     }
 
+    sealed class RefreshReceivedResult {
+        data class Updated(val title: String) : RefreshReceivedResult()
+        data class Revoked(val title: String) : RefreshReceivedResult()
+    }
+
+    /**
+     * Refreshes an individual received credential from the server to check for updates.
+     * If the server returns 404 (or no item is returned), deletes the local credential
+     * and returns [RefreshReceivedResult.Revoked].
+     * Otherwise updates the local credential and returns [RefreshReceivedResult.Updated].
+     */
+    suspend fun refreshReceivedCredential(credentialId: Int): RefreshReceivedResult {
+        if (!session.hasValidSession()) {
+            throw IllegalStateException("You must be logged in to refresh credentials")
+        }
+
+        val entity = dao.getById(credentialId)
+            ?: throw IllegalArgumentException("Credential #$credentialId not found in local database")
+        if (!entity.isReceived) {
+            throw IllegalStateException("Credential #$credentialId is not a received credential")
+        }
+
+        val serverShareIdStr = entity.serverShareId
+            ?: throw IllegalStateException("Credential #$credentialId does not have a serverShareId")
+        val serverShareId = serverShareIdStr.toLongOrNull()
+            ?: throw IllegalStateException("Invalid serverShareId: $serverShareIdStr")
+
+        val deviceId = session.getDeviceId()
+            ?: throw IllegalStateException("Device ID not found")
+        val response = apiService.getSharedItems(deviceId, serverShareId)
+
+        if (response.code() == 404) {
+            dao.deleteById(credentialId)
+            return RefreshReceivedResult.Revoked(entity.title)
+        }
+
+        if (!response.isSuccessful) {
+            val code = response.code()
+            throw Exception("Failed to refresh credential (HTTP $code)")
+        }
+
+        val items = response.body() ?: emptyList()
+        if (items.isEmpty()) {
+            dao.deleteById(credentialId)
+            return RefreshReceivedResult.Revoked(entity.title)
+        }
+
+        val item = items.first()
+        val plaintextJson = crypto.decrypt(item.content)
+        val mapType = object : TypeToken<MutableMap<String, String>>() {}.type
+        val map: MutableMap<String, String> = runCatching {
+            gson.fromJson<MutableMap<String, String>>(plaintextJson, mapType)
+        }.getOrNull() ?: mutableMapOf()
+
+        val title = map["title"]?.takeIf { it.isNotBlank() } ?: entity.title
+        val credType = map["credType"]?.takeIf { it.isNotBlank() } ?: entity.credType
+        val serverIdStr = map["serverId"]?.takeIf { it.isNotBlank() } ?: entity.serverId
+
+        map["serverShareId"] = serverShareIdStr
+        if (serverIdStr != null) {
+            map["serverId"] = serverIdStr
+        }
+        val encContent = crypto.encrypt(gson.toJson(map))
+
+        val updatedEntity = entity.copy(
+            title          = title,
+            credType       = credType,
+            encJsonContent = encContent,
+            serverId       = serverIdStr,
+            serverShareId  = serverShareIdStr,
+            isShared       = true,
+            isReceived     = true,
+            isSynced       = false,
+            lastSyncedAt   = System.currentTimeMillis()
+        )
+        dao.update(updatedEntity)
+        return RefreshReceivedResult.Updated(title)
+    }
+
     /**
      * Result of a global refresh operation.
      *
-     * @param newImported Number of credentials pulled from the server and saved locally.
-     * @param resynced    Number of already-synced local credentials successfully re-synced.
-     * @param failed      Number of credentials that failed to sync (skipped gracefully).
+     * @param newImported   Number of credentials pulled from the server and saved locally.
+     * @param resynced      Number of already-synced local credentials successfully re-synced.
+     * @param updatedShared Number of existing received shared credentials updated with newer server content.
+     * @param failed        Number of credentials that failed to sync (skipped gracefully).
      */
     data class RefreshResult(
         val newImported: Int,
         val resynced: Int,
+        val updatedShared: Int = 0,
         val failed: Int
     )
 
@@ -205,9 +286,10 @@ class SyncRepository @Inject constructor(
         val sharedItems = shareResponse.body() ?: emptyList()
 
         // 2. Process all server synced items: update existing local records or insert new ones
-        var newImported = 0
-        var resynced    = 0
-        var failed      = 0
+        var newImported   = 0
+        var resynced      = 0
+        var updatedShared = 0
+        var failed        = 0
 
         val processedServerIds = mutableSetOf<String>()
 
@@ -288,23 +370,23 @@ class SyncRepository @Inject constructor(
             val currentEntities = dao.getAllSync()
             val existingEntity = currentEntities.find { it.isReceived && it.serverShareId == shareIdStr }
 
-            if (existingEntity == null) {
-                runCatching {
-                    val plaintextJson = crypto.decrypt(item.content)
-                    val mapType = object : TypeToken<MutableMap<String, String>>() {}.type
-                    val map: MutableMap<String, String> = runCatching {
-                        gson.fromJson<MutableMap<String, String>>(plaintextJson, mapType)
-                    }.getOrNull() ?: mutableMapOf()
-                    val title    = map["title"]?.takeIf { it.isNotBlank() } ?: "Untitled"
-                    val credType = map["credType"]?.takeIf { it.isNotBlank() } ?: "LOGIN"
-                    val serverIdStr = map["serverId"]?.takeIf { it.isNotBlank() }
+            runCatching {
+                val plaintextJson = crypto.decrypt(item.content)
+                val mapType = object : TypeToken<MutableMap<String, String>>() {}.type
+                val map: MutableMap<String, String> = runCatching {
+                    gson.fromJson<MutableMap<String, String>>(plaintextJson, mapType)
+                }.getOrNull() ?: mutableMapOf()
+                val title    = map["title"]?.takeIf { it.isNotBlank() } ?: existingEntity?.title ?: "Untitled"
+                val credType = map["credType"]?.takeIf { it.isNotBlank() } ?: existingEntity?.credType ?: "LOGIN"
+                val serverIdStr = map["serverId"]?.takeIf { it.isNotBlank() } ?: existingEntity?.serverId
 
-                    map["serverShareId"] = shareIdStr
-                    if (serverIdStr != null) {
-                        map["serverId"] = serverIdStr
-                    }
-                    val encContent = crypto.encrypt(gson.toJson(map))
+                map["serverShareId"] = shareIdStr
+                if (serverIdStr != null) {
+                    map["serverId"] = serverIdStr
+                }
+                val encContent = crypto.encrypt(gson.toJson(map))
 
+                if (existingEntity == null) {
                     dao.insert(
                         CredentialEntity(
                             title          = title,
@@ -320,12 +402,26 @@ class SyncRepository @Inject constructor(
                     )
                     newImported++
                     android.util.Log.d("SyncRepository", "Successfully imported new shared credential #$shareIdStr")
-                }.onFailure { e ->
-                    failed++
-                    android.util.Log.e("SyncRepository", "Failed to process shared credential #$shareIdStr", e)
+                } else {
+                    dao.update(
+                        existingEntity.copy(
+                            title          = title,
+                            credType       = credType,
+                            encJsonContent = encContent,
+                            serverShareId  = shareIdStr,
+                            serverId       = serverIdStr,
+                            isShared       = true,
+                            isReceived     = true,
+                            isSynced       = false,
+                            lastSyncedAt   = System.currentTimeMillis()
+                        )
+                    )
+                    updatedShared++
+                    android.util.Log.d("SyncRepository", "Successfully updated existing shared credential #$shareIdStr")
                 }
-            } else {
-                // Shared item already exists locally — as per requirements, ignore update for receiving user for now.
+            }.onFailure { e ->
+                failed++
+                android.util.Log.e("SyncRepository", "Failed to process shared credential #$shareIdStr", e)
             }
         }
 
@@ -357,7 +453,7 @@ class SyncRepository @Inject constructor(
                 .onFailure { failed++ }
         }
 
-        return RefreshResult(newImported = newImported, resynced = resynced, failed = failed)
+        return RefreshResult(newImported = newImported, resynced = resynced, updatedShared = updatedShared, failed = failed)
     }
 }
 

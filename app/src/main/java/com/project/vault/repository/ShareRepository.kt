@@ -144,4 +144,65 @@ class ShareRepository @Inject constructor(
 
         return shareResult.id
     }
+
+    /**
+     * Publishes updated credential content to all recipient devices that have access
+     * to the shared credential with [sharedCredId].
+     *
+     * @return Number of recipient devices to which updates were published.
+     */
+    suspend fun publishSharedUpdate(
+        credentialId: Int,
+        sharedCredId: Long
+    ): Int {
+        if (!session.hasValidSession()) {
+            throw IllegalStateException("You must be logged in to update shared credentials")
+        }
+
+        // 1. Fetch devices that have received access to this shared credential
+        val devicesResponse = apiService.getSharedDevices(sharedCredId)
+        if (!devicesResponse.isSuccessful) {
+            val code = devicesResponse.code()
+            throw Exception("Failed to fetch shared devices (HTTP $code)")
+        }
+        val devices = devicesResponse.body() ?: emptyList()
+        if (devices.isEmpty()) {
+            return 0
+        }
+
+        // 2. Fetch local credential and decrypt content
+        val entity = dao.getById(credentialId)
+            ?: throw IllegalArgumentException("Credential #$credentialId not found in local database")
+        val plaintextJson = crypto.decrypt(entity.encJsonContent)
+        val mapType = object : TypeToken<MutableMap<String, String>>() {}.type
+        val jsonMap: MutableMap<String, String> = runCatching {
+            gson.fromJson<MutableMap<String, String>>(plaintextJson, mapType)
+        }.getOrNull() ?: mutableMapOf()
+
+        if (entity.serverId != null) {
+            jsonMap["serverId"] = entity.serverId
+        }
+        jsonMap["serverShareId"] = sharedCredId.toString()
+        val enrichedPlaintextJson = gson.toJson(jsonMap)
+
+        // 3. Group devices by owner and POST /share/{username} for each recipient user
+        val devicesByOwner = devices.groupBy { it.owner }
+        for ((recipientUsername, recipientDevices) in devicesByOwner) {
+            val shareItems = recipientDevices.map { device ->
+                val encContent = crypto.encryptWithPublicKey(enrichedPlaintextJson, device.publicKey)
+                ShareItemRequest(
+                    deviceId     = device.id,
+                    sharedCredId = sharedCredId,
+                    content      = encContent
+                )
+            }
+            val response = apiService.shareCredential(recipientUsername, shareItems)
+            if (!response.isSuccessful) {
+                val code = response.code()
+                throw Exception("Failed to publish update to user '$recipientUsername' (HTTP $code)")
+            }
+        }
+
+        return devices.size
+    }
 }

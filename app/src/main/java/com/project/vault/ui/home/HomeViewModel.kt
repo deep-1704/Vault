@@ -65,7 +65,13 @@ class HomeViewModel @Inject constructor(
                 val entity = repository.getEntityById(credentialId)
                 val detail = repository.getCredentialDetail(credentialId)
                 if (entity != null && detail != null) {
-                    DetailState.Success(credentialId, detail, isSynced = entity.isSynced, isReceived = entity.isReceived)
+                    DetailState.Success(
+                        credentialId,
+                        detail,
+                        isSynced = entity.isSynced,
+                        isReceived = entity.isReceived,
+                        isShared = entity.isShared && entity.serverShareId != null
+                    )
                 } else {
                     null
                 }
@@ -124,6 +130,17 @@ class HomeViewModel @Inject constructor(
     /** Resets [syncState] to [SyncState.Idle] after the error has been consumed. */
     fun resetSyncState() {
         _syncState.value = SyncState.Idle
+    }
+
+    // ── Received Credential Refresh state ─────────────────────────────────────
+
+    private val _refreshReceivedState = MutableLiveData<RefreshReceivedState>(RefreshReceivedState.Idle)
+
+    /** Observed by HomeFragment to show Snackbars for individual received credential refresh. */
+    val refreshReceivedState: LiveData<RefreshReceivedState> = _refreshReceivedState
+
+    fun resetRefreshReceivedState() {
+        _refreshReceivedState.value = RefreshReceivedState.Idle
     }
 
     // ── Global refresh state ──────────────────────────────────────────────────
@@ -271,6 +288,49 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Saves updates to [data] in Room, syncs to owner's devices if the credential is synced,
+     * and publishes the update to all devices that have received access to this shared credential.
+     */
+    fun saveAndShareCredential(id: Int, data: CredentialFormData) {
+        if (_saveState.value is SaveState.Saving) return
+
+        if (authRepository.isLoggedIn.value != true) {
+            _saveState.value = SaveState.Error("You must be logged in to share updates")
+            return
+        }
+
+        _saveState.value = SaveState.Saving
+        viewModelScope.launch {
+            runCatching {
+                val existing = repository.getEntityById(id)
+                    ?: throw IllegalArgumentException("Credential #$id not found")
+                val sharedCredId = existing.serverShareId?.toLongOrNull()
+                    ?: throw IllegalStateException("Credential is not shared")
+                val wasSynced = existing.isSynced
+
+                // 1. Update locally
+                repository.updateCredential(id, data)
+
+                // 2. Sync to owner's devices if already synced
+                if (wasSynced) {
+                    runCatching {
+                        syncRepository.syncCredential(id)
+                    }.onFailure { syncEx ->
+                        android.util.Log.e("HomeViewModel", "Failed to sync to owner devices during Save & Share", syncEx)
+                    }
+                }
+
+                // 3. Publish updates to shared devices
+                shareRepository.publishSharedUpdate(id, sharedCredId)
+            }.onSuccess {
+                _saveState.postValue(SaveState.Success)
+            }.onFailure { e ->
+                _saveState.postValue(SaveState.Error("Saved locally, but failed to publish updates: ${e.message}"))
+            }
+        }
+    }
+
     // ── Delete state ──────────────────────────────────────────────────────────
 
     private val _deleteState = MutableLiveData<DeleteState>(DeleteState.Idle)
@@ -331,14 +391,32 @@ class HomeViewModel @Inject constructor(
         _buttonLoadingEvent.value = ButtonLoadingEvent(credentialId, ButtonType.SYNC, true)
 
         launchSafe {
-            runCatching { syncRepository.syncCredential(credentialId) }
-                .onSuccess {
-                    // Room's reactive Flow automatically updates the credential chip —
-                    // no additional UI action needed here.
-                }
-                .onFailure { e ->
-                    _syncState.postValue(SyncState.Error(e.message ?: "Sync failed"))
-                }
+            val entity = repository.getEntityById(credentialId)
+            if (entity?.isReceived == true) {
+                runCatching { syncRepository.refreshReceivedCredential(credentialId) }
+                    .onSuccess { result ->
+                        when (result) {
+                            is SyncRepository.RefreshReceivedResult.Updated ->
+                                _refreshReceivedState.postValue(RefreshReceivedState.Updated(result.title))
+                            is SyncRepository.RefreshReceivedResult.Revoked ->
+                                _refreshReceivedState.postValue(RefreshReceivedState.Revoked(result.title))
+                        }
+                    }
+                    .onFailure { e ->
+                        _refreshReceivedState.postValue(
+                            RefreshReceivedState.Error(e.message ?: "Failed to refresh credential")
+                        )
+                    }
+            } else {
+                runCatching { syncRepository.syncCredential(credentialId) }
+                    .onSuccess {
+                        // Room's reactive Flow automatically updates the credential chip —
+                        // no additional UI action needed here.
+                    }
+                    .onFailure { e ->
+                        _syncState.postValue(SyncState.Error(e.message ?: "Sync failed"))
+                    }
+            }
 
             syncingIds.remove(credentialId)
             _buttonLoadingEvent.postValue(ButtonLoadingEvent(credentialId, ButtonType.SYNC, false))
@@ -424,6 +502,13 @@ class HomeViewModel @Inject constructor(
         data class Error(val message: String)    : SyncState()
     }
 
+    sealed class RefreshReceivedState {
+        object Idle : RefreshReceivedState()
+        data class Updated(val title: String) : RefreshReceivedState()
+        data class Revoked(val title: String) : RefreshReceivedState()
+        data class Error(val message: String) : RefreshReceivedState()
+    }
+
     sealed class DetailState {
         object Idle    : DetailState()
         object Loading : DetailState()
@@ -431,7 +516,8 @@ class HomeViewModel @Inject constructor(
             val id: Int,
             val data: CredentialFormData,
             val isSynced: Boolean = false,
-            val isReceived: Boolean = false
+            val isReceived: Boolean = false,
+            val isShared: Boolean = false
         ) : DetailState()
         data class Error(val message: String) : DetailState()
     }

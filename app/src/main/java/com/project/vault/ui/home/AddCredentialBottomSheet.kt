@@ -9,6 +9,7 @@ import android.widget.Toast
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.project.vault.R
 import com.project.vault.databinding.BottomSheetAddCredentialBinding
 import com.project.vault.ui.home.add.CardFormView
@@ -130,6 +131,12 @@ class AddCredentialBottomSheet : BottomSheetDialogFragment() {
                     binding.btnSaveAndSync.isVisible = true
                     binding.btnSave.isVisible = true
                 }
+
+                if (state.isShared && !state.isReceived) {
+                    binding.btnSaveAndShare.isVisible = true
+                } else {
+                    binding.btnSaveAndShare.isVisible = false
+                }
             }
         }
     }
@@ -166,6 +173,18 @@ class AddCredentialBottomSheet : BottomSheetDialogFragment() {
                 viewModel.addCredential(formData)
             }
         }
+
+        binding.btnSaveAndShare.setOnClickListener {
+            val formData = extractFormData() ?: return@setOnClickListener
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.dialog_save_share_title)
+                .setMessage(R.string.dialog_save_share_message)
+                .setPositiveButton(R.string.btn_confirm_share) { _, _ ->
+                    viewModel.saveAndShareCredential(editCredentialId, formData)
+                }
+                .setNegativeButton(R.string.btn_cancel, null)
+                .show()
+        }
     }
 
     // ── SaveState observation ──────────────────────────────────────────────────
@@ -176,21 +195,27 @@ class AddCredentialBottomSheet : BottomSheetDialogFragment() {
                 is HomeViewModel.SaveState.Idle -> {
                     binding.btnSave.isEnabled = true
                     binding.btnSaveAndSync.isEnabled = true
+                    binding.btnSaveAndShare.isEnabled = true
                     binding.btnSave.text = getString(R.string.btn_save)
                     binding.btnSaveAndSync.text = getString(R.string.btn_save_sync)
+                    binding.btnSaveAndShare.text = getString(R.string.btn_save_share)
                 }
                 is HomeViewModel.SaveState.Saving -> {
                     binding.btnSave.isEnabled = false
                     binding.btnSaveAndSync.isEnabled = false
+                    binding.btnSaveAndShare.isEnabled = false
                     binding.btnSave.text = getString(R.string.btn_saving)
                     binding.btnSaveAndSync.text = getString(R.string.btn_saving)
+                    binding.btnSaveAndShare.text = getString(R.string.btn_saving)
                 }
                 is HomeViewModel.SaveState.Success -> dismiss()
                 is HomeViewModel.SaveState.Error -> {
                     binding.btnSave.isEnabled = true
                     binding.btnSaveAndSync.isEnabled = true
+                    binding.btnSaveAndShare.isEnabled = true
                     binding.btnSave.text = getString(R.string.btn_save)
                     binding.btnSaveAndSync.text = getString(R.string.btn_save_sync)
+                    binding.btnSaveAndShare.text = getString(R.string.btn_save_share)
                     Toast.makeText(requireContext(), state.message, Toast.LENGTH_SHORT).show()
                 }
             }

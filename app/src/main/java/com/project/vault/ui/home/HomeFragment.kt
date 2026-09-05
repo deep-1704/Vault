@@ -185,18 +185,23 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
             when (state) {
                 is HomeViewModel.RefreshResultState.Success -> {
                     val result = state.result
-                    val message = if (result.failed == 0) {
-                        getString(
-                            R.string.refresh_success,
-                            result.resynced,
-                            result.newImported
-                        )
-                    } else {
-                        getString(
+                    val message = when {
+                        result.failed > 0 -> getString(
                             R.string.refresh_success_with_failures,
                             result.resynced,
                             result.newImported,
                             result.failed
+                        )
+                        result.updatedShared > 0 -> getString(
+                            R.string.refresh_success_with_shared,
+                            result.resynced,
+                            result.updatedShared,
+                            result.newImported
+                        )
+                        else -> getString(
+                            R.string.refresh_success,
+                            result.resynced,
+                            result.newImported
                         )
                     }
                     Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG).show()
@@ -211,6 +216,33 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
                     viewModel.resetRefreshResultState()
                 }
                 is HomeViewModel.RefreshResultState.Idle -> Unit
+            }
+        }
+
+        // Observe individual received credential refresh results
+        viewModel.refreshReceivedState.observe(viewLifecycleOwner) { state ->
+            when (state) {
+                is HomeViewModel.RefreshReceivedState.Updated -> {
+                    Snackbar.make(
+                        binding.root,
+                        getString(R.string.refresh_received_success, state.title),
+                        Snackbar.LENGTH_SHORT
+                    ).show()
+                    viewModel.resetRefreshReceivedState()
+                }
+                is HomeViewModel.RefreshReceivedState.Revoked -> {
+                    Snackbar.make(
+                        binding.root,
+                        getString(R.string.refresh_received_revoked, state.title),
+                        Snackbar.LENGTH_LONG
+                    ).show()
+                    viewModel.resetRefreshReceivedState()
+                }
+                is HomeViewModel.RefreshReceivedState.Error -> {
+                    Snackbar.make(binding.root, state.message, Snackbar.LENGTH_LONG).show()
+                    viewModel.resetRefreshReceivedState()
+                }
+                is HomeViewModel.RefreshReceivedState.Idle -> Unit
             }
         }
 
@@ -322,15 +354,18 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
      * update Room.
      */
     private fun onSyncClicked(credential: Credential) {
+        val promptSubtitle = if (credential.isReceived) {
+            getString(R.string.biometric_refresh_received_subtitle, credential.title)
+        } else {
+            getString(R.string.biometric_sync_subtitle, credential.title)
+        }
+
         when (biometricAuthManager.canAuthenticate(requireContext())) {
             BiometricAuthManager.BiometricStatus.Ready -> {
                 biometricAuthManager.authenticate(
-                    fragment = this,
-                    title = getString(R.string.biometric_prompt_title),
-                    subtitle = getString(
-                        R.string.biometric_sync_subtitle,
-                        credential.title
-                    ),
+                    fragment  = this,
+                    title     = getString(R.string.biometric_prompt_title),
+                    subtitle  = promptSubtitle,
                     onSuccess = { viewModel.onSyncClicked(credential.id) },
                     onError   = { errorMsg -> showToast(errorMsg) }
                 )

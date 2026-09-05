@@ -146,15 +146,20 @@ class CredentialAdapter(
 
         /** Refreshes only the Sync/Share button enabled/loading states. */
         fun bindButtonStates(credential: Credential) {
+            val ctx = binding.root.context
+            val isSyncing = syncLoadingIds.contains(credential.id)
+
             if (credential.isReceived) {
-                binding.btnSync.isVisible = false
                 binding.btnShare.isVisible = false
+                binding.btnSync.isVisible = true
+                binding.btnSync.isEnabled = !isSyncing
+                binding.btnSync.text = if (isSyncing) ctx.getString(R.string.btn_refreshing) else ctx.getString(R.string.btn_refresh)
+                binding.btnSync.icon = if (!isSyncing) ctx.getDrawable(R.drawable.ic_sync) else null
                 return
             }
             binding.btnSync.isVisible = true
             binding.btnShare.isVisible = true
 
-            val isSyncing  = syncLoadingIds.contains(credential.id)
             val isSharing  = shareLoadingIds.contains(credential.id)
 
             binding.btnSync.isEnabled  = !isSyncing

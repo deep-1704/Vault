@@ -122,4 +122,19 @@
     <string name="share_success">Successfully shared \"%1$s\" with \"%2$s\"</string>
     <string name="share_login_required">Please log in to share credentials</string>
 
+    <!-- Save & Share Strings -->
+    <string name="btn_save_share">Save &amp; Share</string>
+    <string name="dialog_save_share_title">Update Shared Credential?</string>
+    <string name="dialog_save_share_message">This update will be shared with all users who have access to this credential. Are you sure you want to proceed?</string>
+    <string name="btn_confirm_share">Save &amp; Share</string>
+    <string name="msg_no_shared_devices">Saved locally, but no active recipient devices found to receive the update.</string>
+
+    <!-- Received Credentials Refresh Strings -->
+    <string name="btn_refresh">Refresh</string>
+    <string name="btn_refreshing">Refreshing…</string>
+    <string name="biometric_refresh_received_subtitle">Authenticate to check for updates on \"%s\"</string>
+    <string name="refresh_received_success">Updated \"%s\"</string>
+    <string name="refresh_received_revoked">Access revoked: \"%s\" was removed by the owner</string>
+    <string name="refresh_success_with_shared">Synced %1$d · %2$d updated shared · %3$d new imported</string>
+
 </resources>

@@ -51,6 +51,14 @@ interface ApiService {
     ): Response<List<DeviceDto>>
 
     /**
+     * Retrieves all devices that have received access to a specific shared credential.
+     */
+    @GET("device/shared/{sharedCredId}")
+    suspend fun getSharedDevices(
+        @Path("sharedCredId") sharedCredId: Long
+    ): Response<List<DeviceDto>>
+
+    /**
      * Shares credentials with another user's devices.
      * If [ShareItemRequest.sharedCredId] is null, a new SharedCredential is created.
      *
@@ -104,7 +112,8 @@ interface ApiService {
      */
     @GET("share/{deviceId}")
     suspend fun getSharedItems(
-        @Path("deviceId") deviceId: String
+        @Path("deviceId") deviceId: String,
+        @Query("sharedCredId") sharedCredId: Long? = null
     ): Response<List<ShareItemResponse>>
 
     /**
