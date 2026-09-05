@@ -1,6 +1,7 @@
 package com.project.vault.repository
 
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.project.vault.entity.CredentialEntity
 import com.project.vault.entity.dao.CredentialDao
 import com.project.vault.security.CryptoManager
@@ -88,7 +89,7 @@ class CredentialRepository @Inject constructor(
         } catch (e: Exception) {
             "{}"
         }
-        val type = object : com.google.gson.reflect.TypeToken<Map<String, String>>() {}.type
+        val type = object : TypeToken<Map<String, String>>() {}.type
         val map: Map<String, String> = try {
             gson.fromJson(decryptedJson, type) ?: emptyMap()
         } catch (e: Exception) {
@@ -119,7 +120,10 @@ class CredentialRepository @Inject constructor(
     suspend fun updateCredential(id: Int, formData: CredentialFormData) {
         val existing = dao.getById(id) ?: return
         val (title, credType, jsonMap) = buildJsonMap(formData)
-        val json = gson.toJson(jsonMap)
+        val mutableMap = jsonMap.toMutableMap()
+        if (existing.serverId != null) mutableMap["serverId"] = existing.serverId
+        if (existing.serverShareId != null) mutableMap["serverShareId"] = existing.serverShareId
+        val json = gson.toJson(mutableMap)
         val ciphertext = crypto.encrypt(json)
 
         val updated = existing.copy(

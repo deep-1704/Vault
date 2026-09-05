@@ -50,7 +50,24 @@ class SyncRepository @Inject constructor(
         // 2. Load and decrypt the credential
         val entity = dao.getById(credentialId)
             ?: throw IllegalArgumentException("Credential #$credentialId not found in local database")
+        if (entity.isReceived) {
+            throw IllegalStateException("Received credentials cannot be synced")
+        }
         val plaintextJson = crypto.decrypt(entity.encJsonContent)
+        val mapType = object : TypeToken<MutableMap<String, String>>() {}.type
+        val jsonMap: MutableMap<String, String> = runCatching {
+            gson.fromJson<MutableMap<String, String>>(plaintextJson, mapType)
+        }.getOrNull() ?: mutableMapOf()
+
+        if (entity.serverId != null) {
+            jsonMap["serverId"] = entity.serverId
+        }
+        if (entity.serverShareId != null) {
+            jsonMap["serverShareId"] = entity.serverShareId
+        } else {
+            jsonMap.remove("serverShareId")
+        }
+        val enrichedPlaintextJson = gson.toJson(jsonMap)
 
         // 3. Fetch all user devices
         val devicesResponse = apiService.getDevices()
@@ -68,7 +85,7 @@ class SyncRepository @Inject constructor(
         // 4. Build per-device sync items — encrypt content for each device individually
         val serverCredId = entity.serverId?.toLongOrNull() // null on first sync
         val syncItems = devices.map { device ->
-            val encContent = crypto.encryptWithPublicKey(plaintextJson, device.publicKey)
+            val encContent = crypto.encryptWithPublicKey(enrichedPlaintextJson, device.publicKey)
             SyncItemRequest(
                 deviceId     = device.id,
                 credentialId = serverCredId,
@@ -89,12 +106,17 @@ class SyncRepository @Inject constructor(
         val syncResult = syncResponse.body()
             ?: throw Exception("Empty response from sync server")
 
-        // 6. Update Room — store server ID and mark as synced
+        // 6. Update Room — store server ID, mark as synced, and update encJsonContent
+        val assignedServerId = syncResult.id.toString()
+        jsonMap["serverId"] = assignedServerId
+        val updatedLocalEncContent = crypto.encrypt(gson.toJson(jsonMap))
+
         dao.update(
             entity.copy(
-                serverId = syncResult.id.toString(),
-                isSynced = true,
-                lastSyncedAt = System.currentTimeMillis()
+                serverId       = assignedServerId,
+                isSynced       = true,
+                lastSyncedAt   = System.currentTimeMillis(),
+                encJsonContent = updatedLocalEncContent
             )
         )
     }
@@ -198,11 +220,22 @@ class SyncRepository @Inject constructor(
 
             runCatching {
                 val plaintextJson = crypto.decrypt(item.content)
-                val mapType = object : TypeToken<Map<String, String>>() {}.type
-                val map: Map<String, String> = gson.fromJson(plaintextJson, mapType) ?: emptyMap()
+                val mapType = object : TypeToken<MutableMap<String, String>>() {}.type
+                val map: MutableMap<String, String> = runCatching {
+                    gson.fromJson<MutableMap<String, String>>(plaintextJson, mapType)
+                }.getOrNull() ?: mutableMapOf()
                 val title    = map["title"]?.takeIf { it.isNotBlank() } ?: existingEntity?.title ?: "Untitled"
                 val credType = map["credType"]?.takeIf { it.isNotBlank() } ?: existingEntity?.credType ?: "LOGIN"
-                val encContent = crypto.encrypt(plaintextJson)
+                val serverShareIdStr = map["serverShareId"]?.takeIf { it.isNotBlank() }
+
+                map["serverId"] = serverIdStr
+                if (serverShareIdStr != null) {
+                    map["serverShareId"] = serverShareIdStr
+                } else {
+                    map.remove("serverShareId")
+                }
+                val encContent = crypto.encrypt(gson.toJson(map))
+                val isShared = serverShareIdStr != null
 
                 if (existingEntity == null) {
                     // New item from server — insert into Room
@@ -212,6 +245,9 @@ class SyncRepository @Inject constructor(
                             credType       = credType,
                             encJsonContent = encContent,
                             serverId       = serverIdStr,
+                            serverShareId  = serverShareIdStr,
+                            isShared       = isShared,
+                            isReceived     = false,
                             isSynced       = true,
                             lastSyncedAt   = System.currentTimeMillis()
                         )
@@ -225,6 +261,10 @@ class SyncRepository @Inject constructor(
                             title          = title,
                             credType       = credType,
                             encJsonContent = encContent,
+                            serverId       = serverIdStr,
+                            serverShareId  = serverShareIdStr,
+                            isShared       = isShared,
+                            isReceived     = false,
                             isSynced       = true,
                             lastSyncedAt   = System.currentTimeMillis()
                         )
@@ -251,11 +291,19 @@ class SyncRepository @Inject constructor(
             if (existingEntity == null) {
                 runCatching {
                     val plaintextJson = crypto.decrypt(item.content)
-                    val mapType = object : TypeToken<Map<String, String>>() {}.type
-                    val map: Map<String, String> = gson.fromJson(plaintextJson, mapType) ?: emptyMap()
+                    val mapType = object : TypeToken<MutableMap<String, String>>() {}.type
+                    val map: MutableMap<String, String> = runCatching {
+                        gson.fromJson<MutableMap<String, String>>(plaintextJson, mapType)
+                    }.getOrNull() ?: mutableMapOf()
                     val title    = map["title"]?.takeIf { it.isNotBlank() } ?: "Untitled"
                     val credType = map["credType"]?.takeIf { it.isNotBlank() } ?: "LOGIN"
-                    val encContent = crypto.encrypt(plaintextJson)
+                    val serverIdStr = map["serverId"]?.takeIf { it.isNotBlank() }
+
+                    map["serverShareId"] = shareIdStr
+                    if (serverIdStr != null) {
+                        map["serverId"] = serverIdStr
+                    }
+                    val encContent = crypto.encrypt(gson.toJson(map))
 
                     dao.insert(
                         CredentialEntity(
@@ -263,6 +311,7 @@ class SyncRepository @Inject constructor(
                             credType       = credType,
                             encJsonContent = encContent,
                             serverShareId  = shareIdStr,
+                            serverId       = serverIdStr,
                             isShared       = true,
                             isReceived     = true,
                             isSynced       = false,

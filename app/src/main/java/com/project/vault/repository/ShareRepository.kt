@@ -1,5 +1,7 @@
 package com.project.vault.repository
 
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.project.vault.api.ApiService
 import com.project.vault.api.dto.DeviceDto
 import com.project.vault.api.dto.ShareItemRequest
@@ -7,6 +9,7 @@ import com.project.vault.entity.dao.CredentialDao
 import com.project.vault.security.AuthSessionManager
 import com.project.vault.security.CryptoManager
 import javax.inject.Inject
+import javax.inject.Provider
 import javax.inject.Singleton
 
 /**
@@ -22,8 +25,11 @@ class ShareRepository @Inject constructor(
     private val apiService: ApiService,
     private val dao: CredentialDao,
     private val crypto: CryptoManager,
-    private val session: AuthSessionManager
+    private val session: AuthSessionManager,
+    private val syncRepositoryProvider: Provider<SyncRepository>
 ) {
+
+    private val gson = Gson()
 
     /**
      * Fetches all registered devices for a target [username].
@@ -70,12 +76,27 @@ class ShareRepository @Inject constructor(
         // 1. Fetch local credential and decrypt plaintext JSON
         val entity = dao.getById(credentialId)
             ?: throw IllegalArgumentException("Credential #$credentialId not found in local database")
+        if (entity.isReceived) {
+            throw IllegalStateException("Received credentials cannot be shared")
+        }
         val plaintextJson = crypto.decrypt(entity.encJsonContent)
+        val mapType = object : TypeToken<MutableMap<String, String>>() {}.type
+        val jsonMap: MutableMap<String, String> = runCatching {
+            gson.fromJson<MutableMap<String, String>>(plaintextJson, mapType)
+        }.getOrNull() ?: mutableMapOf()
+
+        if (entity.serverId != null) {
+            jsonMap["serverId"] = entity.serverId
+        }
+        if (entity.serverShareId != null) {
+            jsonMap["serverShareId"] = entity.serverShareId
+        }
+        val enrichedPlaintextJson = gson.toJson(jsonMap)
 
         // 2. Encrypt plaintext for each recipient device with its RSA public key
         val serverShareId = entity.serverShareId?.toLongOrNull()
         val shareItems = devices.map { device ->
-            val encContent = crypto.encryptWithPublicKey(plaintextJson, device.publicKey)
+            val encContent = crypto.encryptWithPublicKey(enrichedPlaintextJson, device.publicKey)
             ShareItemRequest(
                 deviceId     = device.id,
                 sharedCredId = serverShareId,
@@ -98,13 +119,28 @@ class ShareRepository @Inject constructor(
         val shareResult = response.body()
             ?: throw Exception("Empty response from share server")
 
-        // 4. Update Room entity with isShared = true and serverShareId
+        // 4. Update Room entity with isShared = true, serverShareId, and updated encJsonContent
+        val shareIdStr = shareResult.id.toString()
+        jsonMap["serverShareId"] = shareIdStr
+        val updatedLocalEncContent = crypto.encrypt(gson.toJson(jsonMap))
+
         dao.update(
             entity.copy(
-                isShared      = true,
-                serverShareId = shareResult.id.toString()
+                isShared       = true,
+                serverShareId  = shareIdStr,
+                encJsonContent = updatedLocalEncContent
             )
         )
+
+        // 5. If the credential was already synced, re-sync to the owner's devices
+        // so their other devices receive the updated serverShareId and isShared = true
+        if (entity.isSynced) {
+            runCatching {
+                syncRepositoryProvider.get().syncCredential(credentialId)
+            }.onFailure { e ->
+                android.util.Log.e("ShareRepository", "Auto-resync failed after sharing credential #$credentialId", e)
+            }
+        }
 
         return shareResult.id
     }
