@@ -107,6 +107,7 @@ class CredentialRepository @Inject constructor(
             )
             "LOGIN" -> CredentialFormData.LoginCredentialData(
                 title    = map["title"] ?: entity.title,
+                email    = map["email"] ?: "",
                 username = map["username"] ?: "",
                 password = map["password"] ?: ""
             )
@@ -175,6 +176,7 @@ class CredentialRepository @Inject constructor(
                 map      = mapOf(
                     "title"    to formData.title,
                     "credType" to "LOGIN",
+                    "email"    to formData.email,
                     "username" to formData.username,
                     "password" to formData.password
                 )

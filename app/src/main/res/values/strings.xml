@@ -36,7 +36,7 @@
     <string name="clear_search">Clear search</string>
     <string name="login_title">Sign In</string>
     <string name="login_subtitle">Enter your credentials to enable cross device synchronization and sharing</string>
-    <string name="hint_username">Username or Email</string>
+    <string name="hint_username">Username</string>
     <string name="hint_password">Password</string>
     <string name="error_auth_device_forbidden">Authentication failed: This device may already be registered to another account or access is forbidden.</string>
     <string name="btn_login">Login</string>
@@ -62,6 +62,11 @@
     <string name="hint_title">Title</string>
     <string name="error_field_required">This field is required</string>
 
+    <!-- Form — Login -->
+    <string name="hint_email">Email</string>
+    <string name="error_login_at_least_one">Enter at least one: Email, Username, or Password</string>
+    <string name="error_invalid_email">Invalid email address</string>
+
     <!-- Form — Card -->
     <string name="hint_card_number_inline">Card Number</string>
     <string name="hint_expiry_month">MM</string>
@@ -74,7 +79,8 @@
     <string name="label_card_number">Card Number</string>
     <string name="label_expiry">Expires</string>
     <string name="label_cvv">CVV</string>
-    <string name="label_username">Username / Email</string>
+    <string name="label_email">Email</string>
+    <string name="label_username">Username</string>
     <string name="label_password">Password</string>
     <string name="action_edit">Edit</string>
     <string name="action_delete">Delete</string>

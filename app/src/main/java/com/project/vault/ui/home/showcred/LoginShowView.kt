@@ -4,16 +4,18 @@ import android.content.Context
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.widget.LinearLayout
+import androidx.core.view.isVisible
 import com.project.vault.R
 import com.project.vault.databinding.ViewShowLoginBinding
 import com.project.vault.ui.home.add.CredentialFormData
 
 /**
- * Custom view that renders decrypted Login credential details (Username & Password).
+ * Custom view that renders decrypted Login credential details (Email, Username & Password).
  *
  * Provides:
  *  - Masked and unmasked display of the password with a show/hide toggle button.
- *  - Copy-to-clipboard buttons for username and password.
+ *  - Copy-to-clipboard buttons for email, username, and password.
+ *  - Only displays fields that are non-empty.
  */
 class LoginShowView @JvmOverloads constructor(
     context: Context,
@@ -38,22 +40,38 @@ class LoginShowView @JvmOverloads constructor(
         data: CredentialFormData.LoginCredentialData,
         onCopy: (label: String, text: String) -> Unit
     ) {
-        rawPassword = data.password
+        val hasEmail = data.email.isNotBlank()
+        binding.layoutEmail.isVisible = hasEmail
+        if (hasEmail) {
+            binding.tvEmail.text = data.email
+            binding.btnCopyEmail.setOnClickListener {
+                onCopy(context.getString(R.string.label_email), data.email)
+            }
+        }
 
-        binding.tvUsername.text = data.username
-        updatePasswordDisplay()
+        val hasUsername = data.username.isNotBlank()
+        binding.layoutUsername.isVisible = hasUsername
+        if (hasUsername) {
+            binding.tvUsername.text = data.username
+            binding.btnCopyUsername.setOnClickListener {
+                onCopy(context.getString(R.string.label_username), data.username)
+            }
+        }
 
-        binding.btnTogglePassword.setOnClickListener {
-            passwordRevealed = !passwordRevealed
+        val hasPassword = data.password.isNotBlank()
+        binding.layoutPassword.isVisible = hasPassword
+        if (hasPassword) {
+            rawPassword = data.password
             updatePasswordDisplay()
-        }
 
-        binding.btnCopyUsername.setOnClickListener {
-            onCopy(context.getString(R.string.label_username), data.username)
-        }
+            binding.btnTogglePassword.setOnClickListener {
+                passwordRevealed = !passwordRevealed
+                updatePasswordDisplay()
+            }
 
-        binding.btnCopyPassword.setOnClickListener {
-            onCopy(context.getString(R.string.label_password), rawPassword)
+            binding.btnCopyPassword.setOnClickListener {
+                onCopy(context.getString(R.string.label_password), rawPassword)
+            }
         }
     }
 

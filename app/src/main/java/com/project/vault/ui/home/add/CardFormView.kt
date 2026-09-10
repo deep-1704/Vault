@@ -32,7 +32,7 @@ class CardFormView @JvmOverloads constructor(
     }
 
     /**
-     * Validates all fields with basic non-empty checks.
+     * Validates all fields with basic non-empty checks and card number Luhn validation.
      * Sets an error on each invalid [TextInputLayout] and clears errors on valid ones.
      *
      * @return `true` if all fields pass; `false` otherwise.
@@ -52,10 +52,47 @@ class CardFormView @JvmOverloads constructor(
             }
         }
 
+        fun checkCardNumber(): Boolean {
+            val cardNumber = binding.etCardNumber.text.toString().trim()
+            return when {
+                cardNumber.isBlank() -> {
+                    binding.tilCardNumber.error = requiredMsg
+                    false
+                }
+                !isValidLuhn(cardNumber) -> {
+                    binding.tilCardNumber.error = context.getString(R.string.error_luhn_failed)
+                    false
+                }
+                else -> {
+                    binding.tilCardNumber.error = null
+                    true
+                }
+            }
+        }
+
+        fun checkExpiryMonth(): Boolean {
+            val monthStr = binding.etExpiryMonth.text.toString().trim()
+            val month = monthStr.toIntOrNull()
+            return when {
+                monthStr.isBlank() -> {
+                    binding.tilExpiryMonth.error = requiredMsg
+                    false
+                }
+                month == null || month !in 1..12 -> {
+                    binding.tilExpiryMonth.error = context.getString(R.string.error_invalid_month)
+                    false
+                }
+                else -> {
+                    binding.tilExpiryMonth.error = null
+                    true
+                }
+            }
+        }
+
         isValid = check(binding.tilTitle,        binding.etTitle.text.toString())       && isValid
         isValid = check(binding.tilHolderName,   binding.etHolderName.text.toString())  && isValid
-        isValid = check(binding.tilCardNumber,   binding.etCardNumber.text.toString())  && isValid
-        isValid = check(binding.tilExpiryMonth,  binding.etExpiryMonth.text.toString()) && isValid
+        isValid = checkCardNumber()                                                     && isValid
+        isValid = checkExpiryMonth()                                                    && isValid
         isValid = check(binding.tilExpiryYear,   binding.etExpiryYear.text.toString())  && isValid
         isValid = check(binding.tilCvv,          binding.etCvv.text.toString())         && isValid
 
@@ -86,5 +123,45 @@ class CardFormView @JvmOverloads constructor(
             expiryYear  = binding.etExpiryYear.text.toString().trim(),
             cvv         = binding.etCvv.text.toString().trim()
         )
+
+    companion object {
+        /**
+         * Validates a card number using Luhn's algorithm (Mod 10):
+         * 1. Start from the right: Begin with the second-to-last digit, moving left.
+         * 2. Double every second digit: Multiply every alternate digit by 2.
+         * 3. Adjust two-digit numbers: If doubling results in a number greater than 9,
+         *    add the two digits together (or subtract 9).
+         * 4. Sum all numbers: Add single digits from doubled numbers plus untouched digits in odd positions.
+         * 5. Check total: If total sum is a multiple of 10, the card number is valid.
+         */
+        fun isValidLuhn(number: String): Boolean {
+            val sanitized = number.replace(" ", "").replace("-", "")
+            if (sanitized.isEmpty()) return false
+
+            var step2Sum = 0 // Sum of modified even-position digits
+            var step3Sum = 0 // Sum of odd-position digits
+
+            for (i in sanitized.length - 1 downTo 0) {
+                val digit = sanitized[i].digitToIntOrNull() ?: return false
+                val positionFromRight = sanitized.length - i // 1-based position from right
+
+                if (positionFromRight % 2 == 0) {
+                    // Double every second digit from right
+                    var doubled = digit * 2
+                    // If doubling results in a number > 9, add the digits (or subtract 9)
+                    if (doubled > 9) {
+                        doubled = (doubled / 10) + (doubled % 10)
+                    }
+                    step2Sum += doubled
+                } else {
+                    // Untouched digits in odd positions from right
+                    step3Sum += digit
+                }
+            }
+
+            // Check if total sum is a multiple of 10
+            return (step2Sum + step3Sum) % 10 == 0
+        }
+    }
 }
 

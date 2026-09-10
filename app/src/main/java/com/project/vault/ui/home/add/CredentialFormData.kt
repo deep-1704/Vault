@@ -21,7 +21,8 @@ sealed class CredentialFormData {
 
     data class LoginCredentialData(
         val title: String,
-        val username: String,
-        val password: String
+        val email: String = "",
+        val username: String = "",
+        val password: String = ""
     ) : CredentialFormData()
 }

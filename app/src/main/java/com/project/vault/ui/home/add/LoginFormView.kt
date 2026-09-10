@@ -32,8 +32,12 @@ class LoginFormView @JvmOverloads constructor(
     }
 
     /**
-     * Validates all fields with basic non-empty checks.
-     * Sets an error on each invalid [TextInputLayout] and clears errors on valid ones.
+     * Validates all fields:
+     * - Title is required.
+     * - At least one of Email, Username, or Password must be provided.
+     * - If Email is provided, its format must be valid.
+     *
+     * Sets errors on invalid [TextInputLayout]s and clears errors on valid ones.
      *
      * @return `true` if all fields pass; `false` otherwise.
      */
@@ -41,20 +45,37 @@ class LoginFormView @JvmOverloads constructor(
         val requiredMsg = context.getString(R.string.error_field_required)
         var isValid = true
 
-        fun check(til: com.google.android.material.textfield.TextInputLayout,
-                  value: String): Boolean {
-            return if (value.isBlank()) {
-                til.error = requiredMsg
-                false
-            } else {
-                til.error = null
-                true
-            }
+        val title = binding.etTitle.text.toString().trim()
+        if (title.isBlank()) {
+            binding.tilTitle.error = requiredMsg
+            isValid = false
+        } else {
+            binding.tilTitle.error = null
         }
 
-        isValid = check(binding.tilTitle,    binding.etTitle.text.toString())    && isValid
-        isValid = check(binding.tilUsername, binding.etUsername.text.toString()) && isValid
-        isValid = check(binding.tilPassword, binding.etPassword.text.toString()) && isValid
+        val email = binding.etEmail.text.toString().trim()
+        val username = binding.etUsername.text.toString().trim()
+        val password = binding.etPassword.text.toString().trim()
+
+        val hasAtLeastOne = email.isNotBlank() || username.isNotBlank() || password.isNotBlank()
+
+        if (!hasAtLeastOne) {
+            val atLeastOneMsg = context.getString(R.string.error_login_at_least_one)
+            binding.tilEmail.error = atLeastOneMsg
+            binding.tilUsername.error = atLeastOneMsg
+            binding.tilPassword.error = atLeastOneMsg
+            isValid = false
+        } else {
+            binding.tilUsername.error = null
+            binding.tilPassword.error = null
+
+            if (email.isNotBlank() && !isValidEmail(email)) {
+                binding.tilEmail.error = context.getString(R.string.error_invalid_email)
+                isValid = false
+            } else {
+                binding.tilEmail.error = null
+            }
+        }
 
         return isValid
     }
@@ -64,18 +85,29 @@ class LoginFormView @JvmOverloads constructor(
      */
     fun populate(data: CredentialFormData.LoginCredentialData) {
         binding.etTitle.setText(data.title)
+        binding.etEmail.setText(data.email)
         binding.etUsername.setText(data.username)
         binding.etPassword.setText(data.password)
     }
 
     /**
-     * Returns the form data. Call [validate] first to ensure fields are non-empty.
+     * Returns the form data. Call [validate] first to ensure requirements are met.
      */
     fun getFormData(): CredentialFormData.LoginCredentialData =
         CredentialFormData.LoginCredentialData(
             title    = binding.etTitle.text.toString().trim(),
+            email    = binding.etEmail.text.toString().trim(),
             username = binding.etUsername.text.toString().trim(),
             password = binding.etPassword.text.toString().trim()
         )
+
+    companion object {
+        /**
+         * Validates email format using Android's standard email pattern.
+         */
+        fun isValidEmail(email: String): Boolean {
+            return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+        }
+    }
 }
 
