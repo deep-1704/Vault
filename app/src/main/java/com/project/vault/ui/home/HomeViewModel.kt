@@ -358,12 +358,12 @@ class HomeViewModel @Inject constructor(
                 val isReceived = entity?.isReceived == true
 
                 if (isReceived && serverShareId != null) {
-                    if (authRepository.isLoggedIn.value == true) {
+                    if (authRepository.isLoggedIn.value) {
                         val deviceId = authRepository.getDeviceId()
                         syncRepository.revokeSharedCredential(serverShareId, deviceId)
                     }
                 } else if (isSynced && serverCredId != null) {
-                    if (authRepository.isLoggedIn.value == true) {
+                    if (authRepository.isLoggedIn.value) {
                         syncRepository.deleteSyncedCredential(serverCredId)
                     }
                 }
