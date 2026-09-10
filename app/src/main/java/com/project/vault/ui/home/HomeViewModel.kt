@@ -343,9 +343,10 @@ class HomeViewModel @Inject constructor(
     /**
      * Deletes a credential from Room by [id], and if it was synced,
      * also deletes it from the sync server across all user devices.
+     * If [deleteForSharedUsers] is true, also deletes the credential for all shared users on the server.
      * Updates [deleteState] to [DeleteState.Deleting], then [DeleteState.Success] or [DeleteState.Error].
      */
-    fun deleteCredential(id: Int) {
+    fun deleteCredential(id: Int, deleteForSharedUsers: Boolean = false) {
         if (_deleteState.value is DeleteState.Deleting) return
         _deleteState.value = DeleteState.Deleting
 
@@ -357,13 +358,22 @@ class HomeViewModel @Inject constructor(
                 val isSynced = entity?.isSynced == true
                 val isReceived = entity?.isReceived == true
 
+                if (deleteForSharedUsers) {
+                    if (authRepository.isLoggedIn.value != true) {
+                        throw IllegalStateException("You must be logged in to delete for shared users")
+                    }
+                    if (serverShareId != null) {
+                        syncRepository.deleteSharedCredentialGlobally(serverShareId)
+                    }
+                }
+
                 if (isReceived && serverShareId != null) {
-                    if (authRepository.isLoggedIn.value) {
+                    if (authRepository.isLoggedIn.value == true) {
                         val deviceId = authRepository.getDeviceId()
                         syncRepository.revokeSharedCredential(serverShareId, deviceId)
                     }
                 } else if (isSynced && serverCredId != null) {
-                    if (authRepository.isLoggedIn.value) {
+                    if (authRepository.isLoggedIn.value == true) {
                         syncRepository.deleteSyncedCredential(serverCredId)
                     }
                 }

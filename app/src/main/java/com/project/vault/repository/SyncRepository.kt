@@ -155,6 +155,24 @@ class SyncRepository @Inject constructor(
         }
     }
 
+    /**
+     * Deletes all share entries globally for [sharedCredId] on the server.
+     * Must be called by the owner of the shared credential.
+     *
+     * @throws IllegalStateException if the user is not logged in.
+     * @throws Exception on network / server error.
+     */
+    suspend fun deleteSharedCredentialGlobally(sharedCredId: Long) {
+        if (!session.hasValidSession()) {
+            throw IllegalStateException("You must be logged in to delete shared credential")
+        }
+        val response = apiService.deleteSharedCredential(sharedCredId, deviceId = null)
+        if (!response.isSuccessful && response.code() != 404) {
+            val code = response.code()
+            throw Exception("Failed to delete shared credential from server (HTTP $code)")
+        }
+    }
+
     sealed class RefreshReceivedResult {
         data class Updated(val title: String) : RefreshReceivedResult()
         data class Revoked(val title: String) : RefreshReceivedResult()

@@ -41,6 +41,8 @@ class CredentialBottomSheet : BottomSheetDialogFragment() {
 
     private var credentialId: Int = -1
     private var isCredentialSynced: Boolean = false
+    private var isCredentialShared: Boolean = false
+    private var isCredentialReceived: Boolean = false
 
     override fun getTheme(): Int = R.style.Theme_Vault_BottomSheet
 
@@ -82,15 +84,36 @@ class CredentialBottomSheet : BottomSheetDialogFragment() {
         }
 
         binding.btnDelete.setOnClickListener {
-            showDeleteConfirmation()
+            onDeleteClicked()
         }
     }
 
-    private fun showDeleteConfirmation() {
-        val messageRes = if (isCredentialSynced) {
-            R.string.delete_credential_synced_message
+    private fun onDeleteClicked() {
+        if (isCredentialShared && !isCredentialReceived) {
+            showDeleteSharedPrompt()
         } else {
-            R.string.delete_credential_message
+            showDeleteConfirmation(deleteForSharedUsers = false)
+        }
+    }
+
+    private fun showDeleteSharedPrompt() {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.delete_shared_prompt_title)
+            .setMessage(R.string.delete_shared_prompt_message)
+            .setPositiveButton(R.string.btn_delete_yes) { _, _ ->
+                showDeleteConfirmation(deleteForSharedUsers = true)
+            }
+            .setNegativeButton(R.string.btn_delete_just_for_me) { _, _ ->
+                showDeleteConfirmation(deleteForSharedUsers = false)
+            }
+            .show()
+    }
+
+    private fun showDeleteConfirmation(deleteForSharedUsers: Boolean) {
+        val messageRes = when {
+            deleteForSharedUsers -> R.string.delete_credential_shared_warning_message
+            isCredentialSynced -> R.string.delete_credential_synced_message
+            else -> R.string.delete_credential_message
         }
 
         MaterialAlertDialogBuilder(requireContext())
@@ -98,7 +121,7 @@ class CredentialBottomSheet : BottomSheetDialogFragment() {
             .setMessage(messageRes)
             .setPositiveButton(R.string.action_delete) { _, _ ->
                 if (credentialId != -1) {
-                    viewModel.deleteCredential(credentialId)
+                    viewModel.deleteCredential(credentialId, deleteForSharedUsers = deleteForSharedUsers)
                 }
                 dismiss()
             }
@@ -119,6 +142,8 @@ class CredentialBottomSheet : BottomSheetDialogFragment() {
                 is HomeViewModel.DetailState.Success -> {
                     binding.progressBar.isVisible = false
                     isCredentialSynced = state.isSynced
+                    isCredentialShared = state.isShared
+                    isCredentialReceived = state.isReceived
                     binding.btnEdit.isVisible = !state.isReceived
                     displayCredentialDetail(state.data)
                 }
