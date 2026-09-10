@@ -228,7 +228,8 @@ class AddCredentialBottomSheet : BottomSheetDialogFragment() {
         binding.formContainer.removeAllViews()
         val newForm: View = when (type) {
             CredentialType.CARD  -> CardFormView(requireContext())
-            CredentialType.LOGIN -> LoginFormView(requireContext())
+            CredentialType.LOGIN,
+            CredentialType.OTHER -> LoginFormView(requireContext())
         }
         binding.formContainer.addView(newForm)
         activeFormView = newForm

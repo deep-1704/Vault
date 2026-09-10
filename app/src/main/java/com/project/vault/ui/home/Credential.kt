@@ -14,7 +14,8 @@ data class Credential(
     val isSynced: Boolean = false,
     val isShared: Boolean = false,
     val lastSyncedAt: Long? = null,
-    val isReceived: Boolean = false
+    val isReceived: Boolean = false,
+    val type: CredentialType = CredentialType.OTHER
 ) {
     val status: CredentialStatus
         get() = when {

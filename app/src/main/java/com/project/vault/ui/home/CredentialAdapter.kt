@@ -1,7 +1,9 @@
 package com.project.vault.ui.home
 
+import android.content.res.ColorStateList
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
@@ -126,12 +128,51 @@ class CredentialAdapter(
                 binding.tvLastSynced.isVisible = false
             }
 
+            bindTypeBadge(credential.type)
             bindChips(credential)
             bindButtonStates(credential)
 
             binding.root.setOnClickListener { onCardClick(credential) }
             binding.btnSync.setOnClickListener { onSyncClick(credential) }
             binding.btnShare.setOnClickListener { onShareClick(credential) }
+        }
+
+        private fun bindTypeBadge(type: CredentialType) {
+            val ctx = binding.root.context
+            val labelRes: Int
+            val iconRes: Int
+            val bgRes: Int
+            val textTintRes: Int
+
+            when (type) {
+                CredentialType.CARD -> {
+                    labelRes = R.string.badge_type_card
+                    iconRes = R.drawable.ic_type_card
+                    bgRes = R.color.vault_badge_card_bg
+                    textTintRes = R.color.vault_badge_card_text
+                }
+                CredentialType.LOGIN -> {
+                    labelRes = R.string.badge_type_login
+                    iconRes = R.drawable.ic_type_login
+                    bgRes = R.color.vault_badge_login_bg
+                    textTintRes = R.color.vault_badge_login_text
+                }
+                CredentialType.OTHER -> {
+                    labelRes = R.string.badge_type_other
+                    iconRes = R.drawable.ic_type_other
+                    bgRes = R.color.vault_badge_other_bg
+                    textTintRes = R.color.vault_badge_other_text
+                }
+            }
+
+            binding.tvBadgeTypeLabel.setText(labelRes)
+            val textColor = ContextCompat.getColor(ctx, textTintRes)
+            binding.tvBadgeTypeLabel.setTextColor(textColor)
+            binding.ivBadgeTypeIcon.setImageResource(iconRes)
+            binding.ivBadgeTypeIcon.imageTintList = ColorStateList.valueOf(textColor)
+            binding.badgeCredentialType.backgroundTintList = ColorStateList.valueOf(
+                ContextCompat.getColor(ctx, bgRes)
+            )
         }
 
         private fun bindChips(credential: Credential) {

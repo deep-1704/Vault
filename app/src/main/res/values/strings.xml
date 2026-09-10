@@ -153,4 +153,9 @@
     <string name="refresh_received_revoked">Access revoked: \"%s\" was removed by the owner</string>
     <string name="refresh_success_with_shared">Synced %1$d · %2$d updated shared · %3$d new imported</string>
 
+    <!-- Credential Type Badge Strings -->
+    <string name="badge_type_card">Card</string>
+    <string name="badge_type_login">Login</string>
+    <string name="badge_type_other">Other</string>
+
 </resources>

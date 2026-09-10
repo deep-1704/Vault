@@ -597,7 +597,8 @@ class HomeViewModel @Inject constructor(
         isSynced     = isSynced,
         isShared     = isShared,
         lastSyncedAt = lastSyncedAt,
-        isReceived   = isReceived
+        isReceived   = isReceived,
+        type         = CredentialType.fromString(credType)
     )
 }
 

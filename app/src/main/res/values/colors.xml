@@ -78,4 +78,12 @@
     <color name="vault_status_shared_bg">#1AFFB95F</color>   <!-- Amber ~10% -->
     <color name="vault_status_offline_bg">#23293C</color>    <!-- surface_container_high -->
 
+    <!-- Credential type badge colors -->
+    <color name="vault_badge_card_bg">#1A0052FF</color>
+    <color name="vault_badge_card_text">#B7C4FF</color>
+    <color name="vault_badge_login_bg">#1A8B5CF6</color>
+    <color name="vault_badge_login_text">#C4B5FD</color>
+    <color name="vault_badge_other_bg">#23293C</color>
+    <color name="vault_badge_other_text">#C3C5D9</color>
+
 </resources>
