@@ -11,6 +11,13 @@ import com.project.vault.repository.SyncRepository
 import com.project.vault.ui.base.BaseViewModel
 import com.project.vault.ui.home.add.CredentialFormData
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -18,7 +25,7 @@ import javax.inject.Inject
  * ViewModel for the home screen.
  *
  * - [credentials] is a reactive [LiveData] derived from a Room [Flow]. It updates
- *   automatically whenever the `credentials` table changes — no manual refresh needed.
+ *   automatically whenever the `credentials` table changes or a search query is typed.
  * - [saveState] tracks the lifecycle of an in-flight save operation so the
  *   [AddCredentialBottomSheet] can show a loading state and auto-dismiss on success.
  * - [buttonLoadingEvent] drives per-item Sync/Share button spinners without a full
@@ -42,16 +49,48 @@ class HomeViewModel @Inject constructor(
         authRepository.logout()
     }
 
+    // ── Search query ──────────────────────────────────────────────────────────
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    fun setSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
+    val hasActiveSearch: LiveData<Boolean> = _searchQuery
+        .map { it.isNotBlank() }
+        .asLiveData()
+
     // ── Credential list (reactive, Room-backed) ───────────────────────────────
 
+    private val allCredentialsFlow = repository.getAllFlow()
+        .map { entities -> entities.map { it.toUiModel() } }
+
     /**
-     * Maps [CredentialEntity] rows from the DB to the lightweight UI [Credential] model.
-     * [title] is a plaintext column — no decryption needed for list display.
+     * Total count of all credentials in the database (unaffected by active search query).
      */
+    val totalCredentialsCount: LiveData<Int> = allCredentialsFlow
+        .map { it.size }
+        .asLiveData()
+
+    /**
+     * Filtered credential list according to the debounced search query (case-insensitive title match).
+     * Debounces 100ms while user types, and immediately when cleared or initialised.
+     */
+    @OptIn(FlowPreview::class)
     val credentials: LiveData<List<Credential>> =
-        repository.getAllFlow()
-            .asLiveData()
-            .map { entities -> entities.map { it.toUiModel() } }
+        combine(
+            allCredentialsFlow,
+            _searchQuery.debounce { query -> if (query.isEmpty()) 0L else 100L }
+        ) { list, query ->
+            if (query.isBlank()) {
+                list
+            } else {
+                val trimmed = query.trim()
+                list.filter { it.title.contains(trimmed, ignoreCase = true) }
+            }
+        }.asLiveData()
 
     // ── Credential detail state ───────────────────────────────────────────────
 
@@ -242,7 +281,7 @@ class HomeViewModel @Inject constructor(
                 repository.updateCredential(id, data)
 
                 if (wasSynced) {
-                    if (authRepository.isLoggedIn.value == true) {
+                    if (authRepository.isLoggedIn.value) {
                         runCatching {
                             syncRepository.syncCredential(id)
                         }.onFailure { syncEx ->
@@ -265,7 +304,7 @@ class HomeViewModel @Inject constructor(
     fun saveAndSyncCredential(data: CredentialFormData, editId: Int? = null) {
         if (_saveState.value is SaveState.Saving) return
 
-        if (authRepository.isLoggedIn.value != true) {
+        if (!authRepository.isLoggedIn.value) {
             _saveState.value = SaveState.Error("You must be logged in to sync")
             return
         }
@@ -295,7 +334,7 @@ class HomeViewModel @Inject constructor(
     fun saveAndShareCredential(id: Int, data: CredentialFormData) {
         if (_saveState.value is SaveState.Saving) return
 
-        if (authRepository.isLoggedIn.value != true) {
+        if (!authRepository.isLoggedIn.value) {
             _saveState.value = SaveState.Error("You must be logged in to share updates")
             return
         }
@@ -359,7 +398,7 @@ class HomeViewModel @Inject constructor(
                 val isReceived = entity?.isReceived == true
 
                 if (deleteForSharedUsers) {
-                    if (authRepository.isLoggedIn.value != true) {
+                    if (!authRepository.isLoggedIn.value) {
                         throw IllegalStateException("You must be logged in to delete for shared users")
                     }
                     if (serverShareId != null) {
@@ -368,12 +407,12 @@ class HomeViewModel @Inject constructor(
                 }
 
                 if (isReceived && serverShareId != null) {
-                    if (authRepository.isLoggedIn.value == true) {
+                    if (authRepository.isLoggedIn.value) {
                         val deviceId = authRepository.getDeviceId()
                         syncRepository.revokeSharedCredential(serverShareId, deviceId)
                     }
                 } else if (isSynced && serverCredId != null) {
-                    if (authRepository.isLoggedIn.value == true) {
+                    if (authRepository.isLoggedIn.value) {
                         syncRepository.deleteSyncedCredential(serverCredId)
                     }
                 }
@@ -392,7 +431,7 @@ class HomeViewModel @Inject constructor(
 
         // Auth guard — biometric is checked in the Fragment before this is called,
         // but we double-check session validity here as a safety net.
-        if (authRepository.isLoggedIn.value != true) {
+        if (!authRepository.isLoggedIn.value) {
             _syncState.postValue(SyncState.Error("You must be logged in to sync"))
             return
         }
@@ -456,7 +495,7 @@ class HomeViewModel @Inject constructor(
     fun onGlobalRefreshClicked() {
         if (_isRefreshing.value == true) return   // guard against double-tap
 
-        if (authRepository.isLoggedIn.value != true) {
+        if (!authRepository.isLoggedIn.value) {
             _refreshResultState.postValue(RefreshResultState.Error("You must be logged in to refresh"))
             return
         }

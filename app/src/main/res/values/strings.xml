@@ -30,6 +30,10 @@
     <string name="home_empty_subtitle">Add your first entry</string>
     <string name="home_entry_count_placeholder">%d Secure Entries</string>
     <string name="home_no_entries">No entries</string>
+    <string name="search_hint_enter_title">Enter title</string>
+    <string name="search_empty_title">No matching credentials</string>
+    <string name="search_empty_subtitle">No entries found matching your search query</string>
+    <string name="clear_search">Clear search</string>
     <string name="login_title">Sign In</string>
     <string name="login_subtitle">Enter your credentials to enable cross device synchronization and sharing</string>
     <string name="hint_username">Username or Email</string>

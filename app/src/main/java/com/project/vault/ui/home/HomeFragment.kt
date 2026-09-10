@@ -1,14 +1,19 @@
 package com.project.vault.ui.home
 
+import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import androidx.core.view.isVisible
+import androidx.core.widget.doOnTextChanged
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.project.vault.R
@@ -62,6 +67,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
         super.onViewCreated(view, savedInstanceState)
         observeErrors(viewModel)
         setupRecyclerView()
+        setupSearchBar()
         observeViewModel()
         setupFab()
         setupHeaderButtons()
@@ -73,7 +79,55 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
         binding.rvCredentials.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = this@HomeFragment.adapter
+            addOnScrollListener(object : RecyclerView.OnScrollListener() {
+                override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+                    if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
+                        hideKeyboard()
+                        binding.etSearch.clearFocus()
+                    }
+                }
+            })
         }
+    }
+
+    private fun setupSearchBar() {
+        binding.layoutSearch.setOnClickListener {
+            binding.etSearch.requestFocus()
+            val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+            imm?.showSoftInput(binding.etSearch, InputMethodManager.SHOW_IMPLICIT)
+        }
+
+        binding.etSearch.setOnFocusChangeListener { _, hasFocus ->
+            binding.layoutSearch.isActivated = hasFocus
+        }
+
+        binding.etSearch.doOnTextChanged { text, _, _, _ ->
+            val query = text?.toString().orEmpty()
+            viewModel.setSearchQuery(query)
+            binding.btnClearSearch.isVisible = query.isNotEmpty()
+        }
+
+        binding.btnClearSearch.setOnClickListener {
+            binding.etSearch.text?.clear()
+            hideKeyboard()
+            binding.etSearch.clearFocus()
+        }
+
+        binding.etSearch.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_SEARCH || actionId == EditorInfo.IME_ACTION_DONE) {
+                hideKeyboard()
+                binding.etSearch.clearFocus()
+                true
+            } else {
+                false
+            }
+        }
+    }
+
+    private fun hideKeyboard() {
+        val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+        val view = activity?.currentFocus ?: binding.etSearch
+        imm?.hideSoftInputFromWindow(view.windowToken, 0)
     }
 
     private fun setupFab() {
@@ -148,15 +202,39 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
         viewModel.isLoggedIn.observe(viewLifecycleOwner) { isLoggedIn ->
             updateLoginUiState(isLoggedIn)
         }
+
+        viewModel.totalCredentialsCount.observe(viewLifecycleOwner) { totalCount ->
+            binding.tvEntryCount.text =
+                if (totalCount == 0) getString(R.string.home_no_entries)
+                else getString(R.string.home_entry_count_placeholder, totalCount)
+
+            val hasEntries = totalCount > 0
+            binding.layoutSearch.alpha = if (hasEntries) 1.0f else 0.5f
+            binding.etSearch.isEnabled = hasEntries
+            binding.btnClearSearch.isEnabled = hasEntries
+        }
+
         viewModel.credentials.observe(viewLifecycleOwner) { credentials ->
             adapter.submitList(credentials)
 
             val isEmpty = credentials.isEmpty()
+            val totalCount = viewModel.totalCredentialsCount.value ?: 0
+            val isSearching = binding.etSearch.text?.isNotBlank() == true
+
             binding.rvCredentials.isVisible = !isEmpty
             binding.layoutEmpty.isVisible    = isEmpty
-            binding.tvEntryCount.text =
-                if (isEmpty) getString(R.string.home_no_entries)
-                else getString(R.string.home_entry_count_placeholder, credentials.size)
+
+            if (isEmpty) {
+                if (isSearching && totalCount > 0) {
+                    binding.ivEmptyIcon.setImageResource(R.drawable.ic_search)
+                    binding.tvEmptyTitle.text = getString(R.string.search_empty_title)
+                    binding.tvEmptySubtitle.text = getString(R.string.search_empty_subtitle)
+                } else {
+                    binding.ivEmptyIcon.setImageResource(R.drawable.ic_offline)
+                    binding.tvEmptyTitle.text = getString(R.string.home_empty_title)
+                    binding.tvEmptySubtitle.text = getString(R.string.home_empty_subtitle)
+                }
+            }
         }
 
         viewModel.buttonLoadingEvent.observe(viewLifecycleOwner) { event ->
