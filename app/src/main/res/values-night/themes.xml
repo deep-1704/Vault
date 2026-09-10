@@ -1,7 +1,9 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.Vault" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
-    </style>
+<resources>
+    <!--
+        Vault is a dark-first app with no light variant.
+        The night theme is identical to the day theme — both resolve to
+        Theme.Material3.Dark.NoActionBar with the Vault color system.
+        See values/themes.xml for the full definition.
+    -->
+    <style name="Base.Theme.Vault" parent="Theme.Material3.Dark.NoActionBar" />
 </resources>

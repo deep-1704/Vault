@@ -13,3 +13,6 @@
 .externalNativeBuild
 .cxx
 local.properties
+/DESIGN.md
+/API.md
+.idea

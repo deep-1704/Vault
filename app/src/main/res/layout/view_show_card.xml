@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <!-- Cardholder Name Item -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/bg_credential_item"
+        android:padding="12dp"
+        android:layout_marginBottom="12dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/label_card_holder"
+            android:textAppearance="@style/TextAppearance.Vault.LabelCaps"
+            android:textColor="@color/vault_on_surface_variant" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tvHolderName"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textAppearance="@style/TextAppearance.Vault.BodyLarge"
+                android:textColor="@color/vault_on_surface"
+                android:textStyle="bold" />
+
+            <ImageButton
+                android:id="@+id/btnCopyHolderName"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/action_copy"
+                android:src="@drawable/ic_content_copy"
+                app:tint="@color/vault_on_surface_variant" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Card Number Item -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/bg_credential_item"
+        android:padding="12dp"
+        android:layout_marginBottom="12dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/label_card_number"
+            android:textAppearance="@style/TextAppearance.Vault.LabelCaps"
+            android:textColor="@color/vault_on_surface_variant" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tvCardNumber"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textAppearance="@style/TextAppearance.Vault.MonoMedium"
+                android:textColor="@color/vault_on_surface"
+                android:letterSpacing="0.08" />
+
+            <ImageButton
+                android:id="@+id/btnToggleCardNumber"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/hint_card_number"
+                android:src="@drawable/ic_visibility"
+                app:tint="@color/vault_on_surface_variant" />
+
+            <ImageButton
+                android:id="@+id/btnCopyCardNumber"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginStart="4dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/action_copy"
+                android:src="@drawable/ic_content_copy"
+                app:tint="@color/vault_on_surface_variant" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Expiry and CVV row -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:baselineAligned="false">
+
+        <!-- Expiry -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="6dp"
+            android:orientation="vertical"
+            android:background="@drawable/bg_credential_item"
+            android:padding="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/label_expiry"
+                android:textAppearance="@style/TextAppearance.Vault.LabelCaps"
+                android:textColor="@color/vault_on_surface_variant" />
+
+            <TextView
+                android:id="@+id/tvExpiry"
+                android:layout_width="match_parent"
+                android:layout_height="36dp"
+                android:gravity="center_vertical"
+                android:layout_marginTop="4dp"
+                android:textAppearance="@style/TextAppearance.Vault.MonoMedium"
+                android:textColor="@color/vault_on_surface" />
+        </LinearLayout>
+
+        <!-- CVV -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="6dp"
+            android:orientation="vertical"
+            android:background="@drawable/bg_credential_item"
+            android:padding="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/label_cvv"
+                android:textAppearance="@style/TextAppearance.Vault.LabelCaps"
+                android:textColor="@color/vault_on_surface_variant" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="36dp"
+                android:gravity="center_vertical"
+                android:layout_marginTop="4dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvCvv"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textAppearance="@style/TextAppearance.Vault.MonoMedium"
+                    android:textColor="@color/vault_on_surface"
+                    android:letterSpacing="0.1" />
+
+                <ImageButton
+                    android:id="@+id/btnToggleCvv"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/hint_cvv"
+                    android:src="@drawable/ic_visibility"
+                    app:tint="@color/vault_on_surface_variant" />
+
+                <ImageButton
+                    android:id="@+id/btnCopyCvv"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginStart="2dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/action_copy"
+                    android:src="@drawable/ic_content_copy"
+                    app:tint="@color/vault_on_surface_variant" />
+            </LinearLayout>
+        </LinearLayout>
+
+    </LinearLayout>
+
+</LinearLayout>

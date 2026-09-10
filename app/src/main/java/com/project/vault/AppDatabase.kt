@@ -1,36 +1,91 @@
 package com.project.vault
 
-import android.content.Context
 import androidx.room.Database
-import androidx.room.Room
 import androidx.room.RoomDatabase
-import com.project.vault.dao.EncCardDao
-import com.project.vault.entity.EncCDCard
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
+import com.project.vault.entity.CredentialEntity
+import com.project.vault.entity.dao.CredentialDao
 
+/**
+ * Room database for Vault.
+ *
+ * Version history:
+ *  1 → 2: Replaced stub `placeholder` table with the real `credentials` table.
+ *
+ * Schema conventions:
+ *  - Increment [version] for every schema change.
+ *  - Always provide a [Migration] to preserve user data — never use
+ *    fallbackToDestructiveMigration() in production.
+ *  - Set exportSchema = true and configure a schema export directory once
+ *    the schema stabilises.
+ *
+ * The singleton instance is provided by Hilt via [di.AppModule].
+ */
 @Database(
-    entities = [EncCDCard :: class],
-    version = 2
+    entities = [CredentialEntity::class],
+    version = 5,
+    exportSchema = false
 )
-abstract class AppDatabase: RoomDatabase() {
+abstract class AppDatabase : RoomDatabase() {
+
+    abstract fun credentialDao(): CredentialDao
 
     companion object {
-        @Volatile
-        private var INSTANCE: AppDatabase? = null
+        const val DATABASE_NAME = "vault_database"
 
-        fun getDatabase(context: Context): AppDatabase{
-            return INSTANCE?: synchronized(this) {
-                val instance = Room.databaseBuilder(
-                    context.applicationContext,
-                    AppDatabase::class.java,
-                    "app_database"
+        /**
+         * Migration 1 → 2:
+         *  - Drops the placeholder stub table.
+         *  - Creates the `credentials` table with all required columns.
+         */
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("DROP TABLE IF EXISTS `placeholder`")
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `credentials` (
+                        `id`               INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `server_id`        TEXT,
+                        `is_shared`        INTEGER NOT NULL DEFAULT 0,
+                        `is_synced`        INTEGER NOT NULL DEFAULT 0,
+                        `title`            TEXT NOT NULL,
+                        `cred_type`        TEXT NOT NULL,
+                        `enc_json_content` TEXT NOT NULL
+                    )
+                    """.trimIndent()
                 )
-                    .fallbackToDestructiveMigration(true)
-                    .build()
+            }
+        }
 
-                INSTANCE = instance
-                instance
+        /**
+         * Migration 2 → 3:
+         *  - Adds `last_synced_at` column to `credentials` table.
+         */
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `credentials` ADD COLUMN `last_synced_at` INTEGER")
+            }
+        }
+
+        /**
+         * Migration 3 → 4:
+         *  - Adds `server_share_id` column to `credentials` table.
+         */
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `credentials` ADD COLUMN `server_share_id` TEXT")
+            }
+        }
+
+        /**
+         * Migration 4 → 5:
+         *  - Adds `is_received` column to `credentials` table.
+         */
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `credentials` ADD COLUMN `is_received` INTEGER NOT NULL DEFAULT 0")
             }
         }
     }
-    abstract fun encCardDao(): EncCardDao
 }

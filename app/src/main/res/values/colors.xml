@@ -1,5 +1,89 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+
+    <!-- ================================================================
+         VAULT DESIGN SYSTEM — COLOR PALETTE
+         Source: DESIGN.md (Material3 dark-first, "Invisible Guardian")
+         ================================================================ -->
+
+    <!-- Surface family -->
+    <color name="vault_background">#0C1324</color>
+    <color name="vault_surface">#0C1324</color>
+    <color name="vault_surface_dim">#0C1324</color>
+    <color name="vault_surface_bright">#33394C</color>
+    <color name="vault_surface_container_lowest">#070D1F</color>
+    <color name="vault_surface_container_low">#151B2D</color>
+    <color name="vault_surface_container">#191F31</color>
+    <color name="vault_surface_container_high">#23293C</color>
+    <color name="vault_surface_container_highest">#2E3447</color>
+    <color name="vault_surface_variant">#2E3447</color>
+    <color name="vault_surface_tint">#B7C4FF</color>
+
+    <!-- On-surface -->
+    <color name="vault_on_surface">#DCE1FB</color>
+    <color name="vault_on_surface_variant">#C3C5D9</color>
+    <color name="vault_on_background">#DCE1FB</color>
+    <color name="vault_inverse_surface">#DCE1FB</color>
+    <color name="vault_inverse_on_surface">#2A3043</color>
+
+    <!-- Outline -->
+    <color name="vault_outline">#8D90A2</color>
+    <color name="vault_outline_variant">#434656</color>
+
+    <!-- Primary — Security Blue -->
+    <color name="vault_primary">#B7C4FF</color>
+    <color name="vault_on_primary">#002682</color>
+    <color name="vault_primary_container">#0052FF</color>
+    <color name="vault_on_primary_container">#DFE3FF</color>
+    <color name="vault_inverse_primary">#004CED</color>
+    <color name="vault_primary_fixed">#DDE1FF</color>
+    <color name="vault_primary_fixed_dim">#B7C4FF</color>
+    <color name="vault_on_primary_fixed">#001452</color>
+    <color name="vault_on_primary_fixed_variant">#0038B6</color>
+
+    <!-- Secondary — Emerald Green (Synced / Secure) -->
+    <color name="vault_secondary">#4EDEA3</color>
+    <color name="vault_on_secondary">#003824</color>
+    <color name="vault_secondary_container">#00A572</color>
+    <color name="vault_on_secondary_container">#00311F</color>
+    <color name="vault_secondary_fixed">#6FFBBE</color>
+    <color name="vault_secondary_fixed_dim">#4EDEA3</color>
+    <color name="vault_on_secondary_fixed">#002113</color>
+    <color name="vault_on_secondary_fixed_variant">#005236</color>
+
+    <!-- Tertiary — Amber (Shared / Attention) -->
+    <color name="vault_tertiary">#FFB95F</color>
+    <color name="vault_on_tertiary">#472A00</color>
+    <color name="vault_tertiary_container">#905A00</color>
+    <color name="vault_on_tertiary_container">#FFDFBE</color>
+    <color name="vault_tertiary_fixed">#FFDDB8</color>
+    <color name="vault_tertiary_fixed_dim">#FFB95F</color>
+    <color name="vault_on_tertiary_fixed">#2A1700</color>
+    <color name="vault_on_tertiary_fixed_variant">#653E00</color>
+
+    <!-- Error -->
+    <color name="vault_error">#FFB4AB</color>
+    <color name="vault_on_error">#690005</color>
+    <color name="vault_error_container">#93000A</color>
+    <color name="vault_on_error_container">#FFDAD6</color>
+
+    <!-- Semantic aliases (used directly in component styles) -->
+    <color name="vault_action_primary">#0052FF</color>    <!-- Solid primary button -->
+    <color name="vault_input_background">#2E3447</color>  <!-- Input field fill — matches surface_container_highest for contrast on sheet -->
+    <color name="vault_card_stroke">#1AFFFFFF</color>     <!-- 10% white inner border -->
+    <color name="vault_scrim">#66000000</color>           <!-- Modal overlay -->
+
+    <!-- Status badge backgrounds (low-opacity tints) -->
+    <color name="vault_status_synced_bg">#1A4EDEA3</color>   <!-- Emerald ~10% -->
+    <color name="vault_status_shared_bg">#1AFFB95F</color>   <!-- Amber ~10% -->
+    <color name="vault_status_offline_bg">#23293C</color>    <!-- surface_container_high -->
+
+    <!-- Credential type badge colors -->
+    <color name="vault_badge_card_bg">#1A0052FF</color>
+    <color name="vault_badge_card_text">#B7C4FF</color>
+    <color name="vault_badge_login_bg">#1A8B5CF6</color>
+    <color name="vault_badge_login_text">#C4B5FD</color>
+    <color name="vault_badge_other_bg">#23293C</color>
+    <color name="vault_badge_other_text">#C3C5D9</color>
+
 </resources>

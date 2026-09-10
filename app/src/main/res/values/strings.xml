@@ -24,4 +24,138 @@
     <string name="error_invalid_month">Month must be between 1 and 12</string>
     <string name="error_exp_year_empty">Exp year cannot be empty</string>
     <string name="error_cvv_length">CVV must be 3 digits</string>
+
+    <!-- Vault UI Boilerplate Strings -->
+    <string name="home_empty_title">No credentials added</string>
+    <string name="home_empty_subtitle">Add your first entry</string>
+    <string name="home_entry_count_placeholder">%d Secure Entries</string>
+    <string name="home_no_entries">No entries</string>
+    <string name="search_hint_enter_title">Enter title</string>
+    <string name="search_empty_title">No matching credentials</string>
+    <string name="search_empty_subtitle">No entries found matching your search query</string>
+    <string name="clear_search">Clear search</string>
+    <string name="login_title">Sign In</string>
+    <string name="login_subtitle">Enter your credentials to enable cross device synchronization and sharing</string>
+    <string name="hint_username">Username</string>
+    <string name="hint_password">Password</string>
+    <string name="error_auth_device_forbidden">Authentication failed: This device may already be registered to another account or access is forbidden.</string>
+    <string name="btn_login">Login</string>
+    <string name="btn_create_account">Create account</string>
+    <string name="btn_signup">Signup</string>
+    <string name="btn_sync">Sync</string>
+    <string name="btn_share">Share</string>
+    <string name="bottom_sheet_details_placeholder">Details coming soon</string>
+    <string name="status_synced">Synced</string>
+    <string name="status_shared">Shared</string>
+    <string name="status_offline">Offline</string>
+
+    <!-- Add Credential Bottom Sheet -->
+    <string name="add_credential_title">New Credential</string>
+    <string name="add_credential_type_hint">Credential Type</string>
+    <string name="type_card">Credit / Debit Card</string>
+    <string name="type_login">Username &amp; Password</string>
+    <string name="btn_save">Save</string>
+    <string name="btn_save_sync">Save &amp; Sync</string>
+    <string name="btn_saving">Saving…</string>
+
+    <!-- Form — shared -->
+    <string name="hint_title">Title</string>
+    <string name="error_field_required">This field is required</string>
+
+    <!-- Form — Login -->
+    <string name="hint_email">Email</string>
+    <string name="error_login_at_least_one">Enter at least one: Email, Username, or Password</string>
+    <string name="error_invalid_email">Invalid email address</string>
+
+    <!-- Form — Card -->
+    <string name="hint_card_number_inline">Card Number</string>
+    <string name="hint_expiry_month">MM</string>
+    <string name="hint_expiry_year">YY</string>
+    <string name="hint_cvv_inline">CVV</string>
+
+    <!-- Detail / Show Credential Strings -->
+    <string name="edit_credential_title">Edit Credential</string>
+    <string name="label_card_holder">Cardholder Name</string>
+    <string name="label_card_number">Card Number</string>
+    <string name="label_expiry">Expires</string>
+    <string name="label_cvv">CVV</string>
+    <string name="label_email">Email</string>
+    <string name="label_username">Username</string>
+    <string name="label_password">Password</string>
+    <string name="action_edit">Edit</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_copy">Copy</string>
+    <string name="copied_to_clipboard">%s copied to clipboard</string>
+    <string name="delete_credential_title">Delete Credential</string>
+    <string name="delete_credential_message">Are you sure you want to delete this credential? This action cannot be undone.</string>
+    <string name="delete_credential_synced_message">Are you sure you want to delete this credential? Since it is synced, it will also be deleted from all your other synced devices. This action cannot be undone.</string>
+    <string name="delete_credential_shared_warning_message">Are you sure you want to delete this credential? It will be permanently removed for all shared users and from your devices. This action cannot be undone.</string>
+    <string name="delete_shared_prompt_title">Delete Shared Credential</string>
+    <string name="delete_shared_prompt_message">This credential is shared with other users. Do you want to delete this credential for all shared users as well?</string>
+    <string name="btn_delete_yes">Yes</string>
+    <string name="btn_delete_just_for_me">Just delete for me</string>
+    <string name="error_delete_shared_login_required">You must be logged in to delete this credential for shared users.</string>
+    <string name="deleting_credential">Deleting credential…</string>
+    <string name="delete_credential_success">Credential deleted</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="loading_details">Loading details…</string>
+
+    <!-- Biometric Strings -->
+    <string name="biometric_prompt_title">Unlock Vault</string>
+    <string name="biometric_prompt_subtitle">Authenticate to view and manage credential</string>
+    <string name="biometric_sync_subtitle">Authenticate to sync \"%s\" to all your devices</string>
+    <string name="biometric_unenrolled_title">Security Setup Required</string>
+    <string name="biometric_unenrolled_message">You must register a fingerprint or screen lock on your device to access secure credentials.</string>
+    <string name="btn_open_settings">Open Settings</string>
+    <string name="biometric_auth_failed">Authentication failed</string>
+    <string name="biometric_not_available">Biometric authentication is unavailable on this device</string>
+
+    <!-- Logout Dialog Strings -->
+    <string name="action_logout">Logout</string>
+    <string name="logout_confirmation_title">Log out</string>
+    <string name="logout_confirmation_message">Are you sure you want to log out of your Vault account?</string>
+    <string name="logged_out_success">Logged out successfully</string>
+
+    <!-- Refresh / Global Sync Strings -->
+    <string name="biometric_refresh_subtitle">Authenticate to refresh and sync all credentials</string>
+    <string name="refresh_success">Synced %1$d · %2$d new imported</string>
+    <string name="refresh_success_with_failures">Synced %1$d · %2$d new · %3$d failed</string>
+    <string name="refresh_error">Refresh failed: %s</string>
+
+    <!-- Share Strings -->
+    <string name="share_credential_title">Share Credential</string>
+    <string name="share_credential_subtitle">Enter recipient\'s username</string>
+    <string name="hint_share_username">Recipient Username</string>
+    <string name="btn_send">Send</string>
+    <string name="btn_confirm">Confirm</string>
+    <string name="error_share_empty_username">Username cannot be empty</string>
+    <string name="error_share_self">You cannot share credentials with yourself</string>
+    <string name="error_share_user_not_found">User with username does not exist</string>
+    <string name="share_confirm_title">Confirm Share</string>
+    <string name="share_confirm_message">Are you sure you want to share \"%1$s\" to \"%2$s\"?</string>
+    <string name="biometric_share_subtitle">Authenticate to share \"%s\"</string>
+    <string name="sharing_credential">Sharing credential…</string>
+    <string name="share_success">Successfully shared \"%1$s\" with \"%2$s\"</string>
+    <string name="share_login_required">Please log in to share credentials</string>
+
+    <!-- Save & Share Strings -->
+    <string name="btn_save_share">Save &amp; Share</string>
+    <string name="dialog_save_share_title">Update Shared Credential?</string>
+    <string name="dialog_save_share_message">This update will be shared with all users who have access to this credential. Are you sure you want to proceed?</string>
+    <string name="btn_confirm_share">Save &amp; Share</string>
+    <string name="msg_no_shared_devices">Saved locally, but no active recipient devices found to receive the update.</string>
+
+    <!-- Received Credentials Refresh Strings -->
+    <string name="btn_refresh">Refresh</string>
+    <string name="btn_refreshing">Refreshing…</string>
+    <string name="biometric_refresh_received_subtitle">Authenticate to check for updates on \"%s\"</string>
+    <string name="refresh_received_success">Updated \"%s\"</string>
+    <string name="refresh_received_revoked">Access revoked: \"%s\" was removed by the owner</string>
+    <string name="refresh_success_with_shared">Synced %1$d · %2$d updated shared · %3$d new imported</string>
+
+    <!-- Credential Type Badge Strings -->
+    <string name="badge_type_card">Card</string>
+    <string name="badge_type_login">Login</string>
+    <string name="badge_type_other">Other</string>
+
 </resources>
