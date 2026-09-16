@@ -152,6 +152,20 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
         binding.btnRefresh.setOnClickListener {
             onRefreshClicked()
         }
+
+        // Demonstration notice button
+        binding.btnCaution.setOnClickListener {
+            showDemonstrationNoticeDialog()
+        }
+    }
+
+    private fun showDemonstrationNoticeDialog() {
+        MaterialAlertDialogBuilder(requireContext())
+            .setIcon(R.drawable.ic_warning)
+            .setTitle(R.string.dialog_caution_title)
+            .setMessage(R.string.dialog_caution_message)
+            .setPositiveButton(R.string.dialog_caution_positive, null)
+            .show()
     }
 
     private fun showProfilePopupMenu(anchorView: View) {

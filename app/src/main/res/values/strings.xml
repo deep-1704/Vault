@@ -158,4 +158,10 @@
     <string name="badge_type_login">Login</string>
     <string name="badge_type_other">Other</string>
 
+    <!-- Caution Strings -->
+    <string name="caution_button_desc">Caution</string>
+    <string name="dialog_caution_title">Caution</string>
+    <string name="dialog_caution_message">This application is hosted for demonstration purposes only.\n\n• Cloud accounts and synced or shared credentials may be purged or reset at any time to minimize backend hosting costs.\n\n• Offline credentials stored locally on your device will remain accessible and will never be deleted.</string>
+    <string name="dialog_caution_positive">Got it</string>
+
 </resources>
