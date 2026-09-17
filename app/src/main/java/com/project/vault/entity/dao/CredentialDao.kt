@@ -53,6 +53,20 @@ interface CredentialDao {
     /** Returns a one-shot snapshot of all credentials (used for batch operations). */
     @Query("SELECT * FROM credentials")
     suspend fun getAllSync(): List<CredentialEntity>
+
+    /**
+     * Resets all credentials to offline state by clearing server IDs and sync/share flags.
+     * Called after device deregistration to disconnect all credentials from the server.
+     */
+    @Query("""
+        UPDATE credentials
+        SET server_id = NULL,
+            server_share_id = NULL,
+            is_synced = 0,
+            is_received = 0,
+            is_shared = 0
+    """)
+    suspend fun markAllOffline()
 }
 
 

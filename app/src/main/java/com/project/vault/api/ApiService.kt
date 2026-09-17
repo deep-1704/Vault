@@ -59,6 +59,17 @@ interface ApiService {
     ): Response<List<DeviceDto>>
 
     /**
+     * Deletes (deregisters) a device belonging to the authenticated user.
+     * Related sync and share entries are removed automatically via database cascading.
+     *
+     * @param deviceId The ID of the device to delete.
+     */
+    @DELETE("device/{deviceId}")
+    suspend fun deleteDevice(
+        @Path("deviceId") deviceId: String
+    ): Response<Unit>
+
+    /**
      * Shares credentials with another user's devices.
      * If [ShareItemRequest.sharedCredId] is null, a new SharedCredential is created.
      *

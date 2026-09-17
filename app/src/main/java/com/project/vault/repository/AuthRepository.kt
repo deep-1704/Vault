@@ -34,6 +34,7 @@ class AuthRepository @Inject constructor(
     private val apiService: ApiService,
     private val cryptoManager: CryptoManager,
     private val authSessionManager: AuthSessionManager,
+    private val credentialRepository: CredentialRepository,
     @ApplicationContext private val context: Context
 ) {
 
@@ -130,6 +131,31 @@ class AuthRepository @Inject constructor(
      * Clears local credentials and session state.
      */
     fun logout() {
+        authSessionManager.clearSession()
+    }
+
+    /**
+     * Deregisters the current device from the sync server.
+     *
+     * On success:
+     *  1. Bulk-resets all local credentials to offline state (clears server IDs and flags).
+     *  2. Clears the local session.
+     *
+     * On failure, throws an exception so the caller can show an error to the user.
+     * No local state is mutated on failure, allowing the user to retry.
+     */
+    suspend fun deregisterDevice() {
+        val deviceId = getDeviceId()
+        val response = apiService.deleteDevice(deviceId)
+
+        if (!response.isSuccessful) {
+            val errorBody = response.errorBody()?.string()?.takeIf { it.isNotBlank() }
+            val message = errorBody ?: "Deregister failed (HTTP ${response.code()})"
+            throw Exception(message)
+        }
+
+        // Success: wipe server references from every local credential, then clear session.
+        credentialRepository.markAllOffline()
         authSessionManager.clearSession()
     }
 }

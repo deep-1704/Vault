@@ -147,6 +147,15 @@ class CredentialRepository @Inject constructor(
         dao.deleteById(id)
     }
 
+    /**
+     * Resets all credentials to offline state by clearing their server IDs and
+     * sync/share flags. Called after a successful device deregistration so every
+     * credential reflects that it is no longer connected to the sync server.
+     */
+    suspend fun markAllOffline() {
+        dao.markAllOffline()
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     private data class JsonBuildResult(

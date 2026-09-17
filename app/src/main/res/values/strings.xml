@@ -116,6 +116,15 @@
     <string name="logout_confirmation_message">Are you sure you want to log out of your Vault account?</string>
     <string name="logged_out_success">Logged out successfully</string>
 
+    <!-- Deregister Device Strings -->
+    <string name="action_deregister">Deregister Device</string>
+    <string name="deregister_warning_title">Deregister This Device?</string>
+    <string name="deregister_warning_message">This will:\n\n\u2022 Log you out of this device\n\u2022 Make all synced, received, and/or shared credentials offline</string>
+    <string name="deregister_confirm">Deregister</string>
+    <string name="biometric_deregister_subtitle">Authenticate to deregister this device</string>
+    <string name="deregister_success">Device deregistered successfully</string>
+    <string name="deregistering_device">Deregistering device\u2026</string>
+
     <!-- Refresh / Global Sync Strings -->
     <string name="biometric_refresh_subtitle">Authenticate to refresh and sync all credentials</string>
     <string name="refresh_success">Synced %1$d · %2$d new imported</string>

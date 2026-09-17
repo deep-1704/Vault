@@ -379,6 +379,41 @@ class HomeViewModel @Inject constructor(
         _deleteState.value = DeleteState.Idle
     }
 
+    // ── Deregister device state ───────────────────────────────────────────────
+
+    private val _deregisterState = MutableLiveData<DeregisterState>(DeregisterState.Idle)
+
+    /**
+     * Observed by [HomeFragment] to drive the loading overlay and feedback
+     * for the device deregistration flow.
+     */
+    val deregisterState: LiveData<DeregisterState> = _deregisterState
+
+    /** Resets [deregisterState] to [DeregisterState.Idle] after the event has been consumed. */
+    fun resetDeregisterState() {
+        _deregisterState.value = DeregisterState.Idle
+    }
+
+    /**
+     * Deregisters the current device from the sync server after biometric confirmation.
+     *
+     * On success: all credentials are marked offline and the session is cleared.
+     * On failure: posts [DeregisterState.Error] with the message so the UI can show a Snackbar.
+     */
+    fun deregisterDevice() {
+        if (_deregisterState.value is DeregisterState.Deregistering) return
+        _deregisterState.value = DeregisterState.Deregistering
+        viewModelScope.launch {
+            runCatching {
+                authRepository.deregisterDevice()
+            }.onSuccess {
+                _deregisterState.postValue(DeregisterState.Success)
+            }.onFailure { e ->
+                _deregisterState.postValue(DeregisterState.Error(e.message ?: "Failed to deregister device"))
+            }
+        }
+    }
+
     /**
      * Deletes a credential from Room by [id], and if it was synced,
      * also deletes it from the sync server across all user devices.
@@ -539,6 +574,13 @@ class HomeViewModel @Inject constructor(
         object Deleting : DeleteState()
         object Success  : DeleteState()
         data class Error(val message: String) : DeleteState()
+    }
+
+    sealed class DeregisterState {
+        object Idle          : DeregisterState()
+        object Deregistering : DeregisterState()
+        object Success       : DeregisterState()
+        data class Error(val message: String) : DeregisterState()
     }
 
     /**

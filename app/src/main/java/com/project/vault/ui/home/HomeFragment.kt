@@ -177,13 +177,19 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
             }
         }
         popup.menu.add(0, 2, 1, getString(R.string.action_logout))
+        popup.menu.add(0, 3, 2, getString(R.string.action_deregister))
 
         popup.setOnMenuItemClickListener { menuItem ->
-            if (menuItem.itemId == 2) {
-                showLogoutConfirmationDialog()
-                true
-            } else {
-                false
+            when (menuItem.itemId) {
+                2 -> {
+                    showLogoutConfirmationDialog()
+                    true
+                }
+                3 -> {
+                    showDeregisterWarningDialog()
+                    true
+                }
+                else -> false
             }
         }
         popup.show()
@@ -199,6 +205,39 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
             }
             .setNegativeButton(R.string.btn_cancel, null)
             .show()
+    }
+
+    private fun showDeregisterWarningDialog() {
+        MaterialAlertDialogBuilder(requireContext())
+            .setIcon(R.drawable.ic_warning)
+            .setTitle(R.string.deregister_warning_title)
+            .setMessage(R.string.deregister_warning_message)
+            .setPositiveButton(R.string.deregister_confirm) { _, _ ->
+                authenticateAndDeregister()
+            }
+            .setNegativeButton(R.string.btn_cancel, null)
+            .show()
+    }
+
+    private fun authenticateAndDeregister() {
+        when (biometricAuthManager.canAuthenticate(requireContext())) {
+            BiometricAuthManager.BiometricStatus.Ready -> {
+                biometricAuthManager.authenticate(
+                    fragment  = this,
+                    title     = getString(R.string.biometric_prompt_title),
+                    subtitle  = getString(R.string.biometric_deregister_subtitle),
+                    onSuccess = { viewModel.deregisterDevice() },
+                    onError   = { errorMsg -> showToast(errorMsg) }
+                )
+            }
+            BiometricAuthManager.BiometricStatus.NoneEnrolled -> {
+                showUnenrolledDialog()
+            }
+            BiometricAuthManager.BiometricStatus.HardwareUnavailable,
+            BiometricAuthManager.BiometricStatus.Unsupported -> {
+                showToast(getString(R.string.biometric_not_available))
+            }
+        }
     }
 
     private fun updateLoginUiState(isLoggedIn: Boolean) {
@@ -390,6 +429,28 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
                     shareLoadingDialog = null
                     Snackbar.make(binding.root, state.message, Snackbar.LENGTH_LONG).show()
                     viewModel.resetShareExecutionState()
+                }
+            }
+        }
+
+        // Observe device deregistration state
+        viewModel.deregisterState.observe(viewLifecycleOwner) { state ->
+            when (state) {
+                is HomeViewModel.DeregisterState.Idle -> {
+                    binding.layoutDeleteLoading.isVisible = false
+                }
+                is HomeViewModel.DeregisterState.Deregistering -> {
+                    binding.layoutDeleteLoading.isVisible = true
+                }
+                is HomeViewModel.DeregisterState.Success -> {
+                    binding.layoutDeleteLoading.isVisible = false
+                    showToast(getString(R.string.deregister_success))
+                    viewModel.resetDeregisterState()
+                }
+                is HomeViewModel.DeregisterState.Error -> {
+                    binding.layoutDeleteLoading.isVisible = false
+                    Snackbar.make(binding.root, state.message, Snackbar.LENGTH_LONG).show()
+                    viewModel.resetDeregisterState()
                 }
             }
         }
