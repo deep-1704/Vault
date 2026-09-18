@@ -178,6 +178,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
         }
         popup.menu.add(0, 2, 1, getString(R.string.action_logout))
         popup.menu.add(0, 3, 2, getString(R.string.action_deregister))
+        popup.menu.add(0, 4, 3, getString(R.string.action_delete_account))
 
         popup.setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
@@ -187,6 +188,10 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
                 }
                 3 -> {
                     showDeregisterWarningDialog()
+                    true
+                }
+                4 -> {
+                    showDeleteAccountWarningDialog()
                     true
                 }
                 else -> false
@@ -227,6 +232,39 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
                     title     = getString(R.string.biometric_prompt_title),
                     subtitle  = getString(R.string.biometric_deregister_subtitle),
                     onSuccess = { viewModel.deregisterDevice() },
+                    onError   = { errorMsg -> showToast(errorMsg) }
+                )
+            }
+            BiometricAuthManager.BiometricStatus.NoneEnrolled -> {
+                showUnenrolledDialog()
+            }
+            BiometricAuthManager.BiometricStatus.HardwareUnavailable,
+            BiometricAuthManager.BiometricStatus.Unsupported -> {
+                showToast(getString(R.string.biometric_not_available))
+            }
+        }
+    }
+
+    private fun showDeleteAccountWarningDialog() {
+        MaterialAlertDialogBuilder(requireContext())
+            .setIcon(R.drawable.ic_warning)
+            .setTitle(R.string.delete_account_warning_title)
+            .setMessage(R.string.delete_account_warning_message)
+            .setPositiveButton(R.string.delete_account_confirm) { _, _ ->
+                authenticateAndDeleteAccount()
+            }
+            .setNegativeButton(R.string.btn_cancel, null)
+            .show()
+    }
+
+    private fun authenticateAndDeleteAccount() {
+        when (biometricAuthManager.canAuthenticate(requireContext())) {
+            BiometricAuthManager.BiometricStatus.Ready -> {
+                biometricAuthManager.authenticate(
+                    fragment  = this,
+                    title     = getString(R.string.biometric_prompt_title),
+                    subtitle  = getString(R.string.biometric_delete_account_subtitle),
+                    onSuccess = { viewModel.deleteAccount() },
                     onError   = { errorMsg -> showToast(errorMsg) }
                 )
             }
@@ -451,6 +489,28 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
                     binding.layoutDeleteLoading.isVisible = false
                     Snackbar.make(binding.root, state.message, Snackbar.LENGTH_LONG).show()
                     viewModel.resetDeregisterState()
+                }
+            }
+        }
+
+        // Observe account deletion state
+        viewModel.deleteAccountState.observe(viewLifecycleOwner) { state ->
+            when (state) {
+                is HomeViewModel.DeleteAccountState.Idle -> {
+                    binding.layoutDeleteLoading.isVisible = false
+                }
+                is HomeViewModel.DeleteAccountState.Deleting -> {
+                    binding.layoutDeleteLoading.isVisible = true
+                }
+                is HomeViewModel.DeleteAccountState.Success -> {
+                    binding.layoutDeleteLoading.isVisible = false
+                    showToast(getString(R.string.delete_account_success))
+                    viewModel.resetDeleteAccountState()
+                }
+                is HomeViewModel.DeleteAccountState.Error -> {
+                    binding.layoutDeleteLoading.isVisible = false
+                    Snackbar.make(binding.root, state.message, Snackbar.LENGTH_LONG).show()
+                    viewModel.resetDeleteAccountState()
                 }
             }
         }

@@ -42,6 +42,15 @@ interface ApiService {
     ): Response<Unit>
 
     /**
+     * Permanently deletes the authenticated user's own account.
+     * All associated data (credentials, devices, shared items) is removed via
+     * database-level ON DELETE CASCADE on the server.
+     * Auth header is injected automatically by [BasicAuthInterceptor].
+     */
+    @DELETE("auth")
+    suspend fun deleteAccount(): Response<Unit>
+
+    /**
      * Fetches all devices belonging to a user.
      * If [username] query parameter is omitted, it defaults to the authenticated user.
      */

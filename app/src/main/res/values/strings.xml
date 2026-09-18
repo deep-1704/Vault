@@ -125,6 +125,14 @@
     <string name="deregister_success">Device deregistered successfully</string>
     <string name="deregistering_device">Deregistering device\u2026</string>
 
+    <!-- Delete Account Strings -->
+    <string name="action_delete_account">Delete Account</string>
+    <string name="delete_account_warning_title">Delete Account?</string>
+    <string name="delete_account_warning_message">This will permanently delete your account and all its associated data from the server. This action cannot be undone.\n\nYour locally stored credentials will remain on this device but will be marked as offline.</string>
+    <string name="delete_account_confirm">Delete Account</string>
+    <string name="biometric_delete_account_subtitle">Authenticate to permanently delete your account</string>
+    <string name="delete_account_success">Account deleted successfully</string>
+
     <!-- Refresh / Global Sync Strings -->
     <string name="biometric_refresh_subtitle">Authenticate to refresh and sync all credentials</string>
     <string name="refresh_success">Synced %1$d · %2$d new imported</string>

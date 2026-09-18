@@ -158,4 +158,28 @@ class AuthRepository @Inject constructor(
         credentialRepository.markAllOffline()
         authSessionManager.clearSession()
     }
+
+    /**
+     * Permanently deletes the authenticated user's account from the sync server.
+     *
+     * On success:
+     *  1. Bulk-resets all local credentials to offline state (clears server IDs and flags).
+     *  2. Clears the local session.
+     *
+     * On failure, throws an exception so the caller can show an error to the user.
+     * No local state is mutated on failure, allowing the user to retry.
+     */
+    suspend fun deleteAccount() {
+        val response = apiService.deleteAccount()
+
+        if (!response.isSuccessful) {
+            val errorBody = response.errorBody()?.string()?.takeIf { it.isNotBlank() }
+            val message = errorBody ?: "Account deletion failed (HTTP ${response.code()})"
+            throw Exception(message)
+        }
+
+        // Success: wipe server references from every local credential, then clear session.
+        credentialRepository.markAllOffline()
+        authSessionManager.clearSession()
+    }
 }

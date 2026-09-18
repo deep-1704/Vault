@@ -414,6 +414,40 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    // ── Delete account state ──────────────────────────────────────────────────
+
+    private val _deleteAccountState = MutableLiveData<DeleteAccountState>(DeleteAccountState.Idle)
+
+    /**
+     * Observed by [HomeFragment] to drive the loading overlay and feedback
+     * for the account deletion flow.
+     */
+    val deleteAccountState: LiveData<DeleteAccountState> = _deleteAccountState
+
+    /** Resets [deleteAccountState] to [DeleteAccountState.Idle] after the event has been consumed. */
+    fun resetDeleteAccountState() {
+        _deleteAccountState.value = DeleteAccountState.Idle
+    }
+
+    /**
+     * Permanently deletes the authenticated user's account from the sync server after biometric
+     * confirmation. On success all credentials are marked offline and the session is cleared.
+     * On failure posts [DeleteAccountState.Error] so the UI can show a Snackbar and allow retry.
+     */
+    fun deleteAccount() {
+        if (_deleteAccountState.value is DeleteAccountState.Deleting) return
+        _deleteAccountState.value = DeleteAccountState.Deleting
+        viewModelScope.launch {
+            runCatching {
+                authRepository.deleteAccount()
+            }.onSuccess {
+                _deleteAccountState.postValue(DeleteAccountState.Success)
+            }.onFailure { e ->
+                _deleteAccountState.postValue(DeleteAccountState.Error(e.message ?: "Failed to delete account"))
+            }
+        }
+    }
+
     /**
      * Deletes a credential from Room by [id], and if it was synced,
      * also deletes it from the sync server across all user devices.
@@ -581,6 +615,13 @@ class HomeViewModel @Inject constructor(
         object Deregistering : DeregisterState()
         object Success       : DeregisterState()
         data class Error(val message: String) : DeregisterState()
+    }
+
+    sealed class DeleteAccountState {
+        object Idle     : DeleteAccountState()
+        object Deleting : DeleteAccountState()
+        object Success  : DeleteAccountState()
+        data class Error(val message: String) : DeleteAccountState()
     }
 
     /**
