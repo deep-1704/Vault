@@ -27,7 +27,16 @@ class AuthSessionManager @Inject constructor(
     }
 
     private val prefs: SharedPreferences by lazy {
-        EncryptedSharedPreferences.create(
+        try {
+            createEncryptedPrefs()
+        } catch (_: Exception) {
+            context.deleteSharedPreferences(PREFS_NAME)
+            createEncryptedPrefs()
+        }
+    }
+
+    private fun createEncryptedPrefs(): SharedPreferences {
+        return EncryptedSharedPreferences.create(
             context,
             PREFS_NAME,
             masterKey,
