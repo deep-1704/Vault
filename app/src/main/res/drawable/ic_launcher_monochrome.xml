@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Monochrome Interlocking Rings for Android 13+ Themed Icons -->
+    <!-- Ring 2 (Base Loop) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillType="nonZero"
+        android:pathData="M62,40 A22,22 0 1,1 62,84 A22,22 0 1,1 62,40 M62,49 A13,13 0 1,0 62,75 A13,13 0 1,0 62,49 Z" />
+
+    <!-- Ring 1 (Main Loop with 2dp separation gap around lower crossover for monochrome clarity) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillType="nonZero"
+        android:pathData="M46,24 A22,22 0 1,1 46,68 A22,22 0 1,1 46,24 M46,33 A13,13 0 1,0 46,59 A13,13 0 1,0 46,33 Z" />
+
+    <!-- Overpass Bridge Cutout Mask (clears the path below the bridge) -->
+    <path
+        android:strokeWidth="3.5"
+        android:strokeColor="#000000"
+        android:pathData="M51.0,81.05 A22,22 0 0,1 42.95,51.0 L50.74,55.5 A13,13 0 0,0 55.5,73.26 Z"
+        android:fillColor="#000000" />
+
+    <!-- Overpass Bridge of Ring 2 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillType="nonZero"
+        android:pathData="M51.0,81.05 A22,22 0 0,1 42.95,51.0 L50.74,55.5 A13,13 0 0,0 55.5,73.26 Z" />
+
+</vector>

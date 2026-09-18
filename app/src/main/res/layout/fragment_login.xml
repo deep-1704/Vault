@@ -8,17 +8,28 @@
     android:background="@color/vault_background"
     android:padding="24dp">
 
+    <!-- ── App Logo ─────────────────────────────────────────────── -->
+    <ImageView
+        android:id="@+id/ivVaultLogo"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginTop="16dp"
+        android:src="@drawable/ic_vault_logo"
+        android:contentDescription="@string/app_name"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <!-- ── Title ────────────────────────────────────────────────── -->
     <TextView
         android:id="@+id/tvLoginTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
+        android:layout_marginTop="16dp"
         android:text="@string/login_title"
         android:textAppearance="@style/TextAppearance.Vault.HeadlineLarge"
         android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/ivVaultLogo" />
 
     <!-- ── Subtitle ─────────────────────────────────────────────── -->
     <TextView

@@ -1,11 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:aapt="http://schemas.android.com/aapt"
-    android:width="108dp"
-    android:height="108dp"
+    android:width="48dp"
+    android:height="48dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Ambient Core Security Glow -->
+    <!-- In-App Logo: The Interlocking Rings / Cryptographic Link -->
+    <!-- Ambient Core Glow -->
     <path
         android:pathData="M54,54m-24,0a24,24 0 1,1 48,0a24,24 0 1,1 -48,0">
         <aapt:attr name="android:fillColor">
@@ -20,9 +22,7 @@
         </aapt:attr>
     </path>
 
-    <!-- Ring 2 (Base/Underneath Layer): Deep Cobalt to Electric Violet -->
-    <!-- Represents synchronized multi-device / private key component -->
-    <!-- Center (62, 62), Outer R=22, Inner r=13 -->
+    <!-- Ring 2 (Base/Underneath): Deep Cobalt to Electric Violet -->
     <path
         android:fillType="nonZero"
         android:pathData="M62,40 A22,22 0 1,1 62,84 A22,22 0 1,1 62,40 M62,49 A13,13 0 1,0 62,75 A13,13 0 1,0 62,49 Z">
@@ -40,14 +40,12 @@
         </aapt:attr>
     </path>
 
-    <!-- Soft Ambient Cast Shadow under Ring 1 at Crossing 1 (Upper-Right) -->
+    <!-- Shadow under Ring 1 at Crossing 1 -->
     <path
         android:fillColor="#3D000000"
         android:pathData="M65,37 A23,23 0 0,1 73,45 L69,49 A17,17 0 0,0 61,41 Z" />
 
     <!-- Ring 1 (Main Over Layer): Vivid Cyan to Deep Cobalt -->
-    <!-- Represents public perimeter / public key encryption component -->
-    <!-- Center (46, 46), Outer R=22, Inner r=13 -->
     <path
         android:fillType="nonZero"
         android:pathData="M46,24 A22,22 0 1,1 46,68 A22,22 0 1,1 46,24 M46,33 A13,13 0 1,0 46,59 A13,13 0 1,0 46,33 Z">
@@ -84,13 +82,12 @@
         </aapt:attr>
     </path>
 
-    <!-- Depth Shadow under Overpass Bridge at Crossing 2 (Lower-Left) -->
+    <!-- Shadow under Overpass Bridge -->
     <path
         android:fillColor="#59000000"
         android:pathData="M39.5,49 L53.5,83.5 L57.5,79.5 L43.5,45 Z" />
 
-    <!-- INTERLOCKING OVERPASS BRIDGE: Ring 2 crosses OVER Ring 1 at Lower-Left -->
-    <!-- Completes the true topological cryptographic interlock -->
+    <!-- Overpass Bridge of Ring 2 -->
     <path
         android:fillType="nonZero"
         android:pathData="M51.0,81.05 A22,22 0 0,1 42.95,51.0 L50.74,55.5 A13,13 0 0,0 55.5,73.26 Z">
@@ -107,7 +104,7 @@
         </aapt:attr>
     </path>
 
-    <!-- Specular Gleam on Overpass Bridge -->
+    <!-- Specular Highlight on Overpass Bridge -->
     <path
         android:strokeWidth="1.2"
         android:strokeLineCap="round"
