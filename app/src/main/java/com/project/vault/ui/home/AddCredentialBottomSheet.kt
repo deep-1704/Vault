@@ -12,9 +12,11 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.project.vault.R
 import com.project.vault.databinding.BottomSheetAddCredentialBinding
+import com.project.vault.ui.home.add.AadhaarFormView
 import com.project.vault.ui.home.add.CardFormView
 import com.project.vault.ui.home.add.CredentialFormData
 import com.project.vault.ui.home.add.LoginFormView
+import com.project.vault.ui.home.add.PanFormView
 import dagger.hilt.android.AndroidEntryPoint
 
 /**
@@ -88,13 +90,22 @@ class AddCredentialBottomSheet : BottomSheetDialogFragment() {
     private fun setupTypeDropdown() {
         val types = listOf(
             getString(R.string.type_card),
-            getString(R.string.type_login)
+            getString(R.string.type_login),
+            getString(R.string.type_pan),
+            getString(R.string.type_aadhaar)
         )
         val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, types)
         binding.actvCredentialType.setAdapter(adapter)
 
         binding.actvCredentialType.setOnItemClickListener { _, _, position, _ ->
-            swapFormView(if (position == 0) CredentialType.CARD else CredentialType.LOGIN)
+            swapFormView(
+                when (position) {
+                    0    -> CredentialType.CARD
+                    1    -> CredentialType.LOGIN
+                    2    -> CredentialType.PAN
+                    else -> CredentialType.AADHAAR
+                }
+            )
         }
     }
 
@@ -115,6 +126,16 @@ class AddCredentialBottomSheet : BottomSheetDialogFragment() {
                         binding.actvCredentialType.setText(getString(R.string.type_login), false)
                         swapFormView(CredentialType.LOGIN)
                         (activeFormView as? LoginFormView)?.populate(data)
+                    }
+                    is CredentialFormData.PanCardCredentialData -> {
+                        binding.actvCredentialType.setText(getString(R.string.type_pan), false)
+                        swapFormView(CredentialType.PAN)
+                        (activeFormView as? PanFormView)?.populate(data)
+                    }
+                    is CredentialFormData.AadhaarCardCredentialData -> {
+                        binding.actvCredentialType.setText(getString(R.string.type_aadhaar), false)
+                        swapFormView(CredentialType.AADHAAR)
+                        (activeFormView as? AadhaarFormView)?.populate(data)
                     }
                 }
 
@@ -150,9 +171,11 @@ class AddCredentialBottomSheet : BottomSheetDialogFragment() {
         binding.tilCredentialType.error = null
 
         return when (form) {
-            is CardFormView  -> if (form.validate()) form.getFormData() else null
-            is LoginFormView -> if (form.validate()) form.getFormData() else null
-            else             -> null
+            is CardFormView    -> if (form.validate()) form.getFormData() else null
+            is LoginFormView   -> if (form.validate()) form.getFormData() else null
+            is PanFormView     -> if (form.validate()) form.getFormData() else null
+            is AadhaarFormView -> if (form.validate()) form.getFormData() else null
+            else               -> null
         }
     }
 
@@ -227,9 +250,11 @@ class AddCredentialBottomSheet : BottomSheetDialogFragment() {
     private fun swapFormView(type: CredentialType) {
         binding.formContainer.removeAllViews()
         val newForm: View = when (type) {
-            CredentialType.CARD  -> CardFormView(requireContext())
+            CredentialType.CARD    -> CardFormView(requireContext())
+            CredentialType.PAN     -> PanFormView(requireContext())
+            CredentialType.AADHAAR -> AadhaarFormView(requireContext())
             CredentialType.LOGIN,
-            CredentialType.OTHER -> LoginFormView(requireContext())
+            CredentialType.OTHER   -> LoginFormView(requireContext())
         }
         binding.formContainer.addView(newForm)
         activeFormView = newForm

@@ -7,13 +7,17 @@ package com.project.vault.ui.home
 enum class CredentialType {
     CARD,
     LOGIN,
+    PAN,
+    AADHAAR,
     OTHER;
 
     companion object {
         fun fromString(type: String?): CredentialType = when (type?.trim()?.uppercase()) {
-            "CARD"  -> CARD
-            "LOGIN" -> LOGIN
-            else    -> OTHER
+            "CARD"    -> CARD
+            "LOGIN"   -> LOGIN
+            "PAN"     -> PAN
+            "AADHAAR" -> AADHAAR
+            else      -> OTHER
         }
     }
 }

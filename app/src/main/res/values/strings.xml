@@ -54,6 +54,8 @@
     <string name="add_credential_type_hint">Credential Type</string>
     <string name="type_card">Credit / Debit Card</string>
     <string name="type_login">Username &amp; Password</string>
+    <string name="type_pan">PAN Card</string>
+    <string name="type_aadhaar">Aadhaar Card</string>
     <string name="btn_save">Save</string>
     <string name="btn_save_sync">Save &amp; Sync</string>
     <string name="btn_saving">Saving…</string>
@@ -73,6 +75,17 @@
     <string name="hint_expiry_year">YY</string>
     <string name="hint_cvv_inline">CVV</string>
 
+    <!-- Form — PAN Card -->
+    <string name="hint_pan_number">PAN Number</string>
+    <string name="hint_name_on_card">Name on Card</string>
+    <string name="error_invalid_pan">Invalid PAN number (format: AAAAA9999A)</string>
+
+    <!-- Form — Aadhaar Card -->
+    <string name="hint_aadhaar_number">Aadhaar Number (12 digits)</string>
+    <string name="hint_mobile_number">Registered Mobile Number</string>
+    <string name="error_invalid_aadhaar">Aadhaar number must be exactly 12 digits</string>
+    <string name="error_invalid_mobile">Mobile number must be exactly 10 digits</string>
+
     <!-- Detail / Show Credential Strings -->
     <string name="edit_credential_title">Edit Credential</string>
     <string name="label_card_holder">Cardholder Name</string>
@@ -82,6 +95,10 @@
     <string name="label_email">Email</string>
     <string name="label_username">Username</string>
     <string name="label_password">Password</string>
+    <string name="label_pan_number">PAN Number</string>
+    <string name="label_name_on_card">Name on Card</string>
+    <string name="label_aadhaar_number">Aadhaar Number</string>
+    <string name="label_mobile_number">Mobile Number</string>
     <string name="action_edit">Edit</string>
     <string name="action_delete">Delete</string>
     <string name="action_copy">Copy</string>
@@ -174,6 +191,8 @@
     <string name="badge_type_card">Card</string>
     <string name="badge_type_login">Login</string>
     <string name="badge_type_other">Other</string>
+    <string name="badge_type_pan">PAN</string>
+    <string name="badge_type_aadhaar">Aadhaar</string>
 
     <!-- Caution Strings -->
     <string name="caution_button_desc">Caution</string>

@@ -157,6 +157,18 @@ class CredentialAdapter(
                     bgRes = R.color.vault_badge_login_bg
                     textTintRes = R.color.vault_badge_login_text
                 }
+                CredentialType.PAN -> {
+                    labelRes = R.string.badge_type_pan
+                    iconRes = R.drawable.ic_type_other
+                    bgRes = R.color.vault_badge_other_bg
+                    textTintRes = R.color.vault_badge_other_text
+                }
+                CredentialType.AADHAAR -> {
+                    labelRes = R.string.badge_type_aadhaar
+                    iconRes = R.drawable.ic_type_other
+                    bgRes = R.color.vault_badge_other_bg
+                    textTintRes = R.color.vault_badge_other_text
+                }
                 CredentialType.OTHER -> {
                     labelRes = R.string.badge_type_other
                     iconRes = R.drawable.ic_type_other

@@ -15,8 +15,10 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.project.vault.R
 import com.project.vault.databinding.BottomSheetCredentialBinding
 import com.project.vault.ui.home.add.CredentialFormData
+import com.project.vault.ui.home.showcred.AadhaarShowView
 import com.project.vault.ui.home.showcred.CardShowView
 import com.project.vault.ui.home.showcred.LoginShowView
+import com.project.vault.ui.home.showcred.PanShowView
 import dagger.hilt.android.AndroidEntryPoint
 
 /**
@@ -173,6 +175,22 @@ class CredentialBottomSheet : BottomSheetDialogFragment() {
                     bind(data) { label, text -> copyToClipboard(label, text) }
                 }
                 binding.detailContainer.addView(loginView)
+            }
+            is CredentialFormData.PanCardCredentialData -> {
+                binding.tvSheetTitle.text = data.title
+                binding.tvSheetType.text = getString(R.string.type_pan)
+                val panView = PanShowView(requireContext()).apply {
+                    bind(data) { label, text -> copyToClipboard(label, text) }
+                }
+                binding.detailContainer.addView(panView)
+            }
+            is CredentialFormData.AadhaarCardCredentialData -> {
+                binding.tvSheetTitle.text = data.title
+                binding.tvSheetType.text = getString(R.string.type_aadhaar)
+                val aadhaarView = AadhaarShowView(requireContext()).apply {
+                    bind(data) { label, text -> copyToClipboard(label, text) }
+                }
+                binding.detailContainer.addView(aadhaarView)
             }
         }
     }

@@ -111,6 +111,17 @@ class CredentialRepository @Inject constructor(
                 username = map["username"] ?: "",
                 password = map["password"] ?: ""
             )
+            "PAN" -> CredentialFormData.PanCardCredentialData(
+                title      = map["title"] ?: entity.title,
+                panNumber  = map["panNumber"] ?: "",
+                nameOnCard = map["nameOnCard"] ?: ""
+            )
+            "AADHAAR" -> CredentialFormData.AadhaarCardCredentialData(
+                title         = map["title"] ?: entity.title,
+                nameOnCard    = map["nameOnCard"] ?: "",
+                aadhaarNumber = map["aadhaarNumber"] ?: "",
+                mobileNumber  = map["mobileNumber"] ?: ""
+            )
             else -> null
         }
     }
@@ -188,6 +199,27 @@ class CredentialRepository @Inject constructor(
                     "email"    to formData.email,
                     "username" to formData.username,
                     "password" to formData.password
+                )
+            )
+            is CredentialFormData.PanCardCredentialData -> JsonBuildResult(
+                title    = formData.title,
+                credType = "PAN",
+                map      = mapOf(
+                    "title"      to formData.title,
+                    "credType"   to "PAN",
+                    "panNumber"  to formData.panNumber,
+                    "nameOnCard" to formData.nameOnCard
+                )
+            )
+            is CredentialFormData.AadhaarCardCredentialData -> JsonBuildResult(
+                title    = formData.title,
+                credType = "AADHAAR",
+                map      = mapOf(
+                    "title"         to formData.title,
+                    "credType"      to "AADHAAR",
+                    "nameOnCard"    to formData.nameOnCard,
+                    "aadhaarNumber" to formData.aadhaarNumber,
+                    "mobileNumber"  to formData.mobileNumber
                 )
             )
         }
