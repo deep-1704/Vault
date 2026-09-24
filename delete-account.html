@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vault - Delete Account</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --card-border: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --input-bg: #0f172a;
+      --input-border: #475569;
+      --input-focus: #ef4444;
+      --danger: #ef4444;
+      --danger-hover: #dc2626;
+      --danger-active: #b91c1c;
+      --danger-light: rgba(239, 68, 68, 0.12);
+      --success: #22c55e;
+      --success-light: rgba(34, 197, 94, 0.12);
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      background: radial-gradient(circle at top, #1e293b 0%, var(--bg) 100%);
+      color: var(--text-main);
+      font-family: var(--font-family);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 440px;
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+      padding: 2rem;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 1.75rem;
+    }
+
+    .badge-icon {
+      width: 52px;
+      height: 52px;
+      margin: 0 auto 1rem;
+      border-radius: 50%;
+      background: var(--danger-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--danger);
+    }
+
+    .badge-icon svg {
+      width: 26px;
+      height: 26px;
+    }
+
+    .header h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: -0.025em;
+    }
+
+    .header p {
+      margin-top: 0.5rem;
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .warning-box {
+      background: var(--danger-light);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.82rem;
+      color: #fca5a5;
+      line-height: 1.45;
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 8px;
+      color: var(--text-main);
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .form-group input:focus {
+      border-color: var(--input-focus);
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+    }
+
+    .form-group input::placeholder {
+      color: #64748b;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 0.85rem;
+      background-color: var(--danger);
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: background-color 0.2s, transform 0.1s;
+      margin-top: 0.5rem;
+    }
+
+    .submit-btn:hover:not(:disabled) {
+      background-color: var(--danger-hover);
+    }
+
+    .submit-btn:active:not(:disabled) {
+      background-color: var(--danger-active);
+      transform: scale(0.99);
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #ffffff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: none;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .status-banner {
+      display: none;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-top: 1.25rem;
+      font-size: 0.88rem;
+      line-height: 1.45;
+    }
+
+    .status-banner.error {
+      background-color: var(--danger-light);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
+    }
+
+    .status-banner.success {
+      background-color: var(--success-light);
+      border: 1px solid rgba(34, 197, 94, 0.4);
+      color: #86efac;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="badge-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+        </svg>
+      </div>
+      <h1>Delete Vault Account</h1>
+      <p>Confirm your credentials to permanently delete your account and all associated vault records.</p>
+    </div>
+
+    <div class="warning-box">
+      <strong>Warning:</strong> This action is permanent and cannot be undone. All credentials, linked devices, and shared items will be deleted immediately.
+    </div>
+
+    <form id="delete-form" autocomplete="off">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" placeholder="Enter your username" required autofocus>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="Enter your password" required>
+      </div>
+
+      <button type="submit" id="submit-btn" class="submit-btn">
+        <span class="spinner" id="btn-spinner"></span>
+        <span id="btn-text">Delete My Account</span>
+      </button>
+    </form>
+
+    <div id="status-banner" class="status-banner"></div>
+  </div>
+
+  <script>
+    const API_BASE_URL = 'https://vault-sync-engine-prod-v1.onrender.com';
+    const form = document.getElementById('delete-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const btnSpinner = document.getElementById('btn-spinner');
+    const btnText = document.getElementById('btn-text');
+    const statusBanner = document.getElementById('status-banner');
+
+    function setLoading(isLoading) {
+      submitBtn.disabled = isLoading;
+      document.getElementById('username').disabled = isLoading;
+      document.getElementById('password').disabled = isLoading;
+
+      if (isLoading) {
+        btnSpinner.style.display = 'inline-block';
+        btnText.textContent = 'Deleting Account...';
+      } else {
+        btnSpinner.style.display = 'none';
+        btnText.textContent = 'Delete My Account';
+      }
+    }
+
+    function showStatus(message, isError) {
+      statusBanner.textContent = message;
+      statusBanner.className = 'status-banner ' + (isError ? 'error' : 'success');
+      statusBanner.style.display = 'block';
+    }
+
+    function hideStatus() {
+      statusBanner.style.display = 'none';
+      statusBanner.textContent = '';
+    }
+
+    // Safely encode unicode credentials to standard base64 for HTTP Basic Auth
+    function getBasicAuthHeader(username, password) {
+      const credentials = `${username}:${password}`;
+      const encoded = btoa(unescape(encodeURIComponent(credentials)));
+      return `Basic ${encoded}`;
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideStatus();
+
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+
+      if (!username || !password) {
+        showStatus('Please provide both username and password.', true);
+        return;
+      }
+
+      const confirmed = window.confirm(
+        `Are you sure you want to permanently delete the account "${username}"?\n\nThis will remove all synced credentials, registered devices, and shares. This action CANNOT be undone.`
+      );
+
+      if (!confirmed) {
+        return;
+      }
+
+      setLoading(true);
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': getBasicAuthHeader(username, password)
+          }
+        });
+
+        if (response.status === 204) {
+          // Success: hide the form completely to prevent resubmission
+          form.classList.add('hidden');
+          showStatus(`Account "${username}" has been permanently deleted. All associated credentials and devices have been removed.`, false);
+        } else if (response.status === 401) {
+          showStatus('Unauthorized: Invalid username or password.', true);
+          setLoading(false);
+        } else {
+          let errorDetail = '';
+          try {
+            const body = await response.text();
+            if (body) errorDetail = ` (${body})`;
+          } catch (_) {}
+          showStatus(`Failed to delete account. Server returned status ${response.status}${errorDetail}.`, true);
+          setLoading(false);
+        }
+      } catch (err) {
+        showStatus(`Network Error: Unable to communicate with ${API_BASE_URL}. (${err.message})`, true);
+        setLoading(false);
+      }
+    });
+  </script>
+</body>
+</html>
